@@ -22,6 +22,9 @@
 
 import numpy as np
 
+from paraopt import context
+
+
 __all__ = ['fmin_cma']
 
 
@@ -106,7 +109,8 @@ def fmin_cma(fun, m0, sigma0, npop, maxiter=100, cntol=1e12, cvtol=1e-12):
         xs += m
 
         # compute the function values
-        fs = np.array([fun(x) for x in xs])
+        fs = np.array(context.map(fun, xs))
+        print fs
 
         # sort by function value and select
         select = fs.argsort()[:nselect]

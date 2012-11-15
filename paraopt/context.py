@@ -19,6 +19,20 @@
 #
 #--
 
-from paraopt.context import *
 
-from paraopt.cma import *
+__all__ = ['context']
+
+
+class Context(object):
+    def __init__(self):
+        # initialize with serial version of map
+        self.map = map
+
+    def use_scoop():
+        from scoop import futures
+        def mymap(*args, **kwargs):
+            return list(futures.map(*args, **kwargs))
+        self.map = mymap
+
+
+context = Context()
