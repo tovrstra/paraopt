@@ -28,7 +28,7 @@ class Context(object):
         # initialize with serial version of map
         self.map = map
 
-    def use_scoop():
+    def use_scoop(self):
         from scoop import futures
         def mymap(*args, **kwargs):
             return list(futures.map(*args, **kwargs))
