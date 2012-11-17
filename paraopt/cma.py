@@ -35,7 +35,7 @@ CONVERGED_RANGE = 2
 FAILED_SIGMA = -1
 
 
-def fmin_cma(fun, m0, sigma0, npop, maxiter=100, cntol=1e6, stol=1e-12, rtol=None):
+def fmin_cma(fun, m0, sigma0, npop, maxiter=100, cntol=1e6, stol=1e-12, rtol=None, verbose=False):
     '''Minimize a function with a basic CMA algorithm
 
        **Arguments:**
@@ -73,6 +73,9 @@ def fmin_cma(fun, m0, sigma0, npop, maxiter=100, cntol=1e6, stol=1e-12, rtol=Non
        rtol
             When the range of the selected results drops below this threshold,
             the optimization has converged.
+
+       verbose
+            When set to True, some convergence info is printed on screen
     '''
 
     # A) Parse the arguments:
@@ -102,15 +105,22 @@ def fmin_cma(fun, m0, sigma0, npop, maxiter=100, cntol=1e6, stol=1e-12, rtol=Non
     nselect = npop/2
 
     # B) The main loop
+    if verbose:
+        print 'Iteration   max(sigmas)   min(sigmas)       min(fs)     range(fs)'
     for i in xrange(maxiter):
         # diagonalize the covariance matrix
         evals, evecs = np.linalg.eigh(covar)
         sigmas = evals**0.5
         max_sigma = abs(sigmas).max()
         min_sigma = abs(sigmas).min()
+        # screen info
         if max_sigma < stol:
+            if verbose:
+                print '%9i  % 12.5e  % 12.5e' % (i, max_sigma, min_sigma)
             return m, CONVERGED_SIGMA
         elif max_sigma > min_sigma*cntol:
+            if verbose:
+                print '%9i  % 12.5e  % 12.5e' % (i, max_sigma, min_sigma)
             return m, FAILED_DEGENERATE
 
         # generate input samples
@@ -121,13 +131,19 @@ def fmin_cma(fun, m0, sigma0, npop, maxiter=100, cntol=1e6, stol=1e-12, rtol=Non
 
         # compute the function values
         fs = np.array(context.map(fun, xs))
-        print fs
 
         # sort by function value and select
         select = fs.argsort()[:nselect]
         xs = xs[select]
         fs = fs[select]
-        if rtol is not None and fs[-1] - fs[0] < rtol:
+        frange = fs[-1] - fs[0]
+
+        # screen info
+        if verbose:
+            print '%9i  % 12.5e  % 12.5e  % 12.5e  % 12.5e' % (i, max_sigma, min_sigma, fs[0], frange)
+
+        # check for range convergence
+        if rtol is not None and frange < rtol:
             return m, CONVERGED_RANGE
 
         # determine the new mean and covariance
@@ -136,5 +152,6 @@ def fmin_cma(fun, m0, sigma0, npop, maxiter=100, cntol=1e6, stol=1e-12, rtol=Non
         ys = xs - m # must be done with old mean!
         covar = np.dot(weights*ys.T, ys)
         m = np.dot(weights, xs)
+
 
     return m
