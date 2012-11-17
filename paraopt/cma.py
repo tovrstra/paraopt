@@ -25,10 +25,17 @@ import numpy as np
 from paraopt import context
 
 
-__all__ = ['fmin_cma']
+__all__ = [
+    'fmin_cma', 'CONVERGED_SIGMA', 'CONVERGED_RANGE', 'FAILED_SIGMA'
+]
 
 
-def fmin_cma(fun, m0, sigma0, npop, maxiter=100, cntol=1e12, cvtol=1e-12):
+CONVERGED_SIGMA = 1
+CONVERGED_RANGE = 2
+FAILED_SIGMA = -1
+
+
+def fmin_cma(fun, m0, sigma0, npop, maxiter=100, cntol=1e6, stol=1e-12, rtol=None):
     '''Minimize a function with a basic CMA algorithm
 
        **Arguments:**
@@ -58,10 +65,14 @@ def fmin_cma(fun, m0, sigma0, npop, maxiter=100, cntol=1e12, cvtol=1e-12):
             threshold, the minimum is considered degenerate and the optimizer
             stops.
 
-       cvtol
-            When the largest covariance eigenvalue drops below this value, the
-            solution is sufficiently close to the real optimum and the optimizer
-            is interupted.
+       stol
+            When the largest sqrt(covariance eigenvalue) drops below this value,
+            the solution is sufficiently close to the real optimum and the
+            optimization has converged.
+
+       rtol
+            When the range of the selected results drops below this threshold,
+            the optimization has converged.
     '''
 
     # A) Parse the arguments:
@@ -94,13 +105,13 @@ def fmin_cma(fun, m0, sigma0, npop, maxiter=100, cntol=1e12, cvtol=1e-12):
     for i in xrange(maxiter):
         # diagonalize the covariance matrix
         evals, evecs = np.linalg.eigh(covar)
-        max_eval = abs(evals).max()
-        min_eval = abs(evals).min()
-        if max_eval < cvtol:
-            break
-        elif max_eval > min_eval*cntol:
-            raise RuntimeError('The minumum seems degenerate. Try with a larger population or use a different objective function.')
         sigmas = evals**0.5
+        max_sigma = abs(sigmas).max()
+        min_sigma = abs(sigmas).min()
+        if max_sigma < stol:
+            return m, CONVERGED_SIGMA
+        elif max_sigma > min_sigma*cntol:
+            return m, FAILED_DEGENERATE
 
         # generate input samples
         xs = np.random.normal(0, 1, (npop, ndof))
@@ -116,6 +127,8 @@ def fmin_cma(fun, m0, sigma0, npop, maxiter=100, cntol=1e12, cvtol=1e-12):
         select = fs.argsort()[:nselect]
         xs = xs[select]
         fs = fs[select]
+        if rtol is not None and fs[-1] - fs[0] < rtol:
+            return m, CONVERGED_RANGE
 
         # determine the new mean and covariance
         weights = nselect-np.arange(nselect, dtype=float)
