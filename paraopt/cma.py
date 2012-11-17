@@ -86,11 +86,11 @@ def fmin_cma(fun, m0, sigma0, npop, maxiter=100, cntol=1e6, stol=1e-12, rtol=Non
 
     if isinstance(sigma0, np.ndarray):
         if len(sigma0.shape) == 0:
-            covar = np.identity(ndof, float)*sigma0
+            covar = np.identity(ndof, float)*sigma0**2
         elif len(sigma0.shape) == 1:
             if sigma0.shape[0] != ndof:
                 raise TypeError('The size of sigma0 does not match the size of the initial guess.')
-            covar = np.diag(sigma0)
+            covar = np.diag(sigma0**2)
         elif len(sigma0.shape) == 2:
             if sigma0.shape[0] != ndof or sigma0.shape[1] != ndof:
                 raise TypeError('The size of sigma0 does not match the size of the initial guess.')
@@ -98,7 +98,7 @@ def fmin_cma(fun, m0, sigma0, npop, maxiter=100, cntol=1e6, stol=1e-12, rtol=Non
         else:
             raise TypeError('sigma0 must have at most two dimensions.')
     else:
-        covar = np.identity(ndof, float)*sigma0
+        covar = np.identity(ndof, float)*sigma0**2
 
     if not isinstance(npop, int) or npop < 2:
         raise ValueError('npop must be an integer not smaller than 2.')
