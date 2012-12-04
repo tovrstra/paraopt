@@ -21,18 +21,21 @@
 
 
 import numpy as np
+import bisect
 
 from paraopt import context
 
 
 __all__ = [
-    'fmin_cma', 'CONVERGED_SIGMA', 'CONVERGED_RANGE', 'FAILED_SIGMA'
+    'CONVERGED_SIGMA', 'CONVERGED_RANGE', 'FAILED_DEGENERATE', 'FAILED_MAXITER',
+    'fmin_cma',
 ]
 
 
 CONVERGED_SIGMA = 1
 CONVERGED_RANGE = 2
-FAILED_SIGMA = -1
+FAILED_DEGENERATE = -1
+FAILED_MAXITER = -2
 
 
 def fmin_cma(fun, m0, sigma0, npop, maxiter=100, cntol=1e6, stol=1e-12, rtol=None, verbose=False):
@@ -154,4 +157,4 @@ def fmin_cma(fun, m0, sigma0, npop, maxiter=100, cntol=1e6, stol=1e-12, rtol=Non
         m = np.dot(weights, xs)
 
 
-    return m
+    return m, FAILED_MAXITER

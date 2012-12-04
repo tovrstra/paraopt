@@ -40,6 +40,6 @@ def test_rosenbrock1():
 def test_rosenbrock2():
     for i in xrange(10):
         m0 = np.random.uniform(-1,3, 2)
-        m, status = fmin_cma(rosenbrock, m0, 1.0, 100, 1000, rtol=1e-3, verbose=True)
+        m, status = fmin_cma(rosenbrock, m0, 1.0, npop=100, maxiter=1000, rtol=1e-3, verbose=True)
         assert status == CONVERGED_RANGE
         assert rosenbrock(m) < 0.3

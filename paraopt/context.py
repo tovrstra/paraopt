@@ -23,16 +23,30 @@
 __all__ = ['context']
 
 
+
+class SubmitStub(object):
+    def __init__(self, fun, *args, **kwargs):
+        self._result = fun(*args, **kwargs)
+
+    def result(self):
+        return self._result
+
+
 class Context(object):
     def __init__(self):
-        # initialize with serial version of map
+        # initialize with serial version of map and submit
+        self.use_stub()
+
+    def use_stub(self):
         self.map = map
+        self.submit = SubmitStub
 
     def use_scoop(self):
         from scoop import futures
         def mymap(*args, **kwargs):
             return list(futures.map(*args, **kwargs))
         self.map = mymap
+        self.submit = futures.submit
 
 
 context = Context()
