@@ -31,15 +31,15 @@ def rosenbrock(x):
 def test_rosenbrock1():
     for i in xrange(10):
         m0 = np.random.uniform(-1,3, 2)
-        m, status = fmin_cma(rosenbrock, m0, 1.0, 100, 1000)
-        assert status == CONVERGED_SIGMA
-        assert abs(m - 1).max() < 1e-5
-        assert rosenbrock(m) < 1e-9
+        cm, status = fmin_cma(rosenbrock, m0, 1.0, 100, 1000)
+        assert status == 'CONVERGED_SIGMA'
+        assert abs(cm.m - 1).max() < 1e-5
+        assert rosenbrock(cm.m) < 1e-9
 
 
 def test_rosenbrock2():
     for i in xrange(10):
         m0 = np.random.uniform(-1,3, 2)
-        m, status = fmin_cma(rosenbrock, m0, 1.0, npop=100, maxiter=1000, rtol=1e-3, verbose=True)
-        assert status == CONVERGED_RANGE
-        assert rosenbrock(m) < 0.3
+        cm, status = fmin_cma(rosenbrock, m0, 1.0, npop=100, maxiter=1000, rtol=1e-3, verbose=True)
+        assert status == 'CONVERGED_RANGE'
+        assert rosenbrock(cm.m) < 0.3
