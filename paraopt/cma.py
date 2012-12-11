@@ -50,14 +50,14 @@ class CovarianceModel(object):
         self.mu_eff = 1/(self.weights**2).sum()
 
         # Learning rates for the covariance matrix
-        self.c_1 = 2/self.ndof**2
+        self.c_1 = min(1.0, 2/self.ndof**2)
         self.c_mu = min(self.mu_eff/self.ndof**2, 1-self.c_1)
         self.c_old = 1 - self.c_1 - self.c_mu
 
         # Learning rates for the paths
-        self.c_path_c = 3.0/self.ndof
+        self.c_path_c = min(1.0, 3.0/self.ndof)
         self.root_c = np.sqrt(self.c_path_c*(2-self.c_path_c)*self.mu_eff)
-        self.c_path_sigma = 1.0/self.ndof
+        self.c_path_sigma =  min(1.0, 1.0/self.ndof)
         self.root_sigma = np.sqrt(self.c_path_sigma*(2-self.c_path_sigma)*self.mu_eff)
         self.ref_path_sigma_norm = np.sqrt(2.0)*gamma(0.5*(self.ndof+1))/gamma(0.5*self.ndof)
 
@@ -106,8 +106,9 @@ class CovarianceModel(object):
         self.m = new_m
 
         # update the step size
-        path_sigma_norm = np.linalg.norm(self.path_sigma)
-        self.sigma = self.sigma*np.exp(self.c_path_sigma*(path_sigma_norm/self.ref_path_sigma_norm - 1))
+        if self.ndof > 1:
+            path_sigma_norm = np.linalg.norm(self.path_sigma)
+            self.sigma = self.sigma*np.exp(self.c_path_sigma*(path_sigma_norm/self.ref_path_sigma_norm - 1))
 
         self._update_derived()
 

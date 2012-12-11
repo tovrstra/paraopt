@@ -24,6 +24,19 @@ import numpy as np
 from paraopt import *
 
 
+def harmonic(x):
+    return 0.5*x[0]**2
+
+
+def test_harmonic():
+    for i in xrange(10):
+        m0 = np.random.uniform(-1,3, 1)
+        cm, status = fmin_cma(harmonic, m0, 1.0, 10, 1000)
+        assert status == 'CONVERGED_SIGMA'
+        assert abs(cm.m - 0.0).max() < 1e-5
+        assert harmonic(cm.m) < 1e-9
+
+
 def rosenbrock(x):
     return (1-x[0])**2 + 100*(x[1]-x[0]**2)**2
 
