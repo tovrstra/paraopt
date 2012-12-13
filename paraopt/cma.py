@@ -211,7 +211,7 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rt
 
     # B) The main loop
     if verbose:
-        print 'Iteration   max(sigmas)   min(sigmas)       min(fs)     range(fs)'
+        print 'Iteration   max(sigmas)   min(sigmas)       min(fs)     range(fs) linear  sigma-path-ratio'
     for i in xrange(max_iter):
         # screen info
         if verbose:
@@ -255,8 +255,8 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rt
                 print 'L',
             else:
                 print ' ',
-            if cm.do_stepscale:
-                print ' % 12.5e' % (np.linalg.norm(cm.path_sigma))
+            if cm.do_rank1 or cm.do_stepscale:
+                print '      % 12.5e' % (np.linalg.norm(cm.path_sigma))
             else:
                 print
 
