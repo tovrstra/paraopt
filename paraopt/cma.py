@@ -106,12 +106,11 @@ class CovarianceModel(object):
             # update the evolution path for the step size
             self.path_sigma = (1-self.c_path_sigma)*self.path_sigma + \
                               self.norm_sigma*np.dot(self.inv_root_covar, (new_m - self.m))/self.sigma
-            path_sigma_norm = np.linalg.norm(self.path_sigma)
+            self.path_sigma_ratio = np.linalg.norm(self.path_sigma)/self.ref_path_sigma_norm
             self.linear_slope = (
-                path_sigma_norm
+                self.path_sigma_ratio
                 /np.sqrt(1-(1-self.c_path_sigma)**(2*self.update_counter+2)) >
-                (1.4+2/(self.ndof+1))*
-                self.ref_path_sigma_norm
+                (1.4+2/(self.ndof+1))
             )
 
         if self.linear_slope or not self.do_rank1:
@@ -137,7 +136,7 @@ class CovarianceModel(object):
 
         # update the step size
         if self.do_stepscale:
-            scale = np.exp(self.c_path_sigma/self.d_path_sigma*(path_sigma_norm/self.ref_path_sigma_norm - 1))
+            scale = np.exp(self.c_path_sigma/self.d_path_sigma*(self.path_sigma_ratio - 1))
             #scale = np.clip(scale, 0.5, 1.1)
             #scale = 1
             self.sigma = self.sigma*scale
@@ -211,7 +210,7 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rt
 
     # B) The main loop
     if verbose:
-        print 'Iteration   max(sigmas)   min(sigmas)       min(fs)     range(fs) linear  sigma-path-ratio'
+        print 'Iteration   max(sigmas)   min(sigmas)       min(fs)     range(fs) linear  path-sigma-ratio'
     for i in xrange(max_iter):
         # screen info
         if verbose:
@@ -256,7 +255,7 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rt
             else:
                 print ' ',
             if cm.do_rank1 or cm.do_stepscale:
-                print '      % 12.5e' % (np.linalg.norm(cm.path_sigma))
+                print '      % 12.5e' % cm.path_sigma_ratio
             else:
                 print
 
