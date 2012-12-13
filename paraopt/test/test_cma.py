@@ -31,10 +31,10 @@ def harmonic(x):
 def test_harmonic():
     for i in xrange(10):
         m0 = np.random.uniform(-1,3, 1)
-        cm, status = fmin_cma(harmonic, m0, 1.0, 10, 1000)
+        cm, status = fmin_cma(harmonic, m0, 1.0, npop=10, stol=1e-4, verbose=True)
         assert status == 'CONVERGED_SIGMA'
-        assert abs(cm.m - 0.0).max() < 1e-5
-        assert harmonic(cm.m) < 1e-9
+        assert abs(cm.m - 0.0).max() < 1e-3
+        assert harmonic(cm.m) < 1e-6
 
 
 def rosenbrock(x):
@@ -44,7 +44,7 @@ def rosenbrock(x):
 def test_rosenbrock1():
     for i in xrange(10):
         m0 = np.random.uniform(-1,3, 2)
-        cm, status = fmin_cma(rosenbrock, m0, 1.0, 100, 1000)
+        cm, status = fmin_cma(rosenbrock, m0, 1.0, npop=50, max_iter=1000)
         assert status == 'CONVERGED_SIGMA'
         assert abs(cm.m - 1).max() < 1e-5
         assert rosenbrock(cm.m) < 1e-9
@@ -53,6 +53,6 @@ def test_rosenbrock1():
 def test_rosenbrock2():
     for i in xrange(10):
         m0 = np.random.uniform(-1,3, 2)
-        cm, status = fmin_cma(rosenbrock, m0, 1.0, npop=100, maxiter=1000, rtol=1e-3, verbose=True)
+        cm, status = fmin_cma(rosenbrock, m0, 1.0, npop=50, max_iter=1000, rtol=1e-10, verbose=True)
         assert status == 'CONVERGED_RANGE'
         assert rosenbrock(cm.m) < 0.3
