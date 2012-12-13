@@ -86,7 +86,7 @@ class CovarianceModel(object):
         self.sigmas = self.evals**0.5
         self.max_sigma = abs(self.sigmas).max()*self.sigma
         self.min_sigma = abs(self.sigmas).min()*self.sigma
-        self.inv_root_covar = np.dot(self.evecs/self.sigma, self.evecs.T)
+        self.inv_root_covar = np.dot(self.evecs/self.sigmas, self.evecs.T)
 
     def generate(self):
         xs = np.random.normal(0, self.sigma, (self.npop, self.ndof))
