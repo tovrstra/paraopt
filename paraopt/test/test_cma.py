@@ -56,3 +56,20 @@ def test_rosenbrock2():
         cm, status = fmin_cma(rosenbrock, m0, 1.0, npop=50, max_iter=1000, rtol=1e-10, verbose=True)
         assert status == 'CONVERGED_RANGE'
         assert rosenbrock(cm.m) < 0.3
+
+
+class LogCallback(object):
+    def __init__(self):
+        self.log = []
+
+    def __call__(self, *args, **kwargs):
+        self.log.append((args, kwargs))
+
+
+def test_callback():
+    lcb = LogCallback()
+    m0 = np.random.uniform(2, 3, 2)
+    cm, status = fmin_cma(rosenbrock, m0, 1.0, npop=50, max_iter=10, rtol=1e-10, callback=lcb)
+    assert len(lcb.log) == 10
+    for item in lcb.log:
+        assert item == ((cm,),{})

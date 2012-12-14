@@ -145,7 +145,7 @@ class CovarianceModel(object):
         self.update_counter += 1
 
 
-def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rtol=None, smax=1e12, verbose=False, do_rank1=True, do_stepscale=True):
+def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rtol=None, smax=1e12, verbose=False, do_rank1=True, do_stepscale=True, callback=None):
     '''Minimize a function with a basic CMA algorithm
 
        **Arguments:**
@@ -197,10 +197,14 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rt
             If True, rank-1 updates are used in the CMA algorith. This increases
             efficiency on well-behaved functions but decreases robustness.
 
-       do_stepscale=True
+       do_stepscale
             If True, step-size updates are used in the CMA algorith. This
             increases efficiency on well-behaved functions but decreases
             robustness.
+
+       callback
+            If given, this routine is called after each update of the covariance
+            model. One argument is given, i.e. the covariance model.
     '''
 
     # A) Parse the arguments:
@@ -278,5 +282,8 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rt
                 print '      % 12.5e' % cm.path_sigma_ratio
             else:
                 print
+
+        if callback is not None:
+            callback(cm)
 
     return cm, 'FAILED_MAX_ITER'
