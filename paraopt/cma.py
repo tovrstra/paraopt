@@ -208,6 +208,26 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rt
     if not isinstance(cm.npop, int) or cm.npop < 1:
         raise ValueError('npop must be a strictly positive integer.')
 
+    if verbose:
+        print 'CMA parameters'
+        print '  Number of unknowns:    %10i' % cm.ndof
+        print '  Population size:       %10i' % cm.npop
+        print '  Selection size:        %10i' % cm.nselect
+        print '  Effective size:        %10.5f' % cm.mu_eff
+        print '  Rank-1 learning rate:  %10.5f' % cm.c_1
+        print '  Rank-mu learning rate: %10.5f' % cm.c_mu
+        print '  Cumul learning rate:   %10.5f' % cm.c_path_c
+        print '  Sigma learning rate:   %10.5f' % cm.c_path_sigma
+        print '  Sigma damping:         %10.5f' % cm.d_path_sigma
+        print '  Maximum iterations:    %10i' % max_iter
+        print '  Sigma tolerance:       %10.3e' % stol
+        print '  Sigma maximum:         %10.3e' % smax
+        print '  Condition threshold:   %10.3e' % cntol
+        if rtol is not None:
+            print '  Range threshold:       %10.3e' % rtol
+        print '  Do rank-1 update:      %10s' % do_rank1
+        print '  Do step size update:   %10s' % do_stepscale
+
     # B) The main loop
     if verbose:
         print 'Iteration   max(sigmas)   min(sigmas)       min(fs)     range(fs) linear  path-sigma-ratio'
