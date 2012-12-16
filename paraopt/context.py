@@ -38,7 +38,9 @@ class Context(object):
         self.use_stub()
 
     def use_stub(self):
-        self.map = map
+        def mymap(fn, l, **kwargs):
+            return [fn(i, **kwargs) for i in l]
+        self.map = mymap
         self.submit = SubmitStub
 
     def use_scoop(self):
