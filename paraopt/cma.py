@@ -22,7 +22,7 @@
 
 import numpy as np
 from scipy.special import gamma
-import bisect
+import time
 
 from paraopt import context
 
@@ -234,7 +234,8 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rt
 
     # B) The main loop
     if verbose:
-        print 'Iteration   max(sigmas)   min(sigmas)       min(fs)     range(fs) linear  path-sigma-ratio'
+        print 'Iteration   max(sigmas)   min(sigmas)       min(fs)     range(fs) linear  path-sigma-ratio  walltime[s]'
+    time0 = time.time()
     for i in xrange(max_iter):
         # screen info
         if verbose:
@@ -279,9 +280,10 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rt
             else:
                 print ' ',
             if cm.do_rank1 or cm.do_stepscale:
-                print '      % 12.5e' % cm.path_sigma_ratio
+                print '      % 12.5e' % cm.path_sigma_ratio,
             else:
-                print
+                print '                  ',
+            print '%16.3f' % (time.time()-time0)
 
         if callback is not None:
             callback(cm)
