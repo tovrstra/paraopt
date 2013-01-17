@@ -22,13 +22,13 @@
 
 import numpy as np
 from scipy.special import gamma
-import time
+import time, sys, traceback
 
 from paraopt import context
 
 
 __all__ = [
-    'fmin_cma',
+    'fmin_cma', 'WorkerWrapper',
 ]
 
 
@@ -145,7 +145,27 @@ class CovarianceModel(object):
         self.update_counter += 1
 
 
-def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rtol=None, smax=1e12, verbose=False, do_rank1=True, do_stepscale=True, callback=None):
+class WorkerWrapper(object):
+    __name__ = 'WorkerWrapper'
+
+    def __init__(self, myfn, reraise=False):
+        self.myfn = myfn
+        self.reraise = reraise
+
+    def __call__(self, *args, **kwargs):
+        try:
+            return self.myfn(*args, **kwargs)
+        except:
+            type, value, tb = sys.exc_info()
+            lines = traceback.format_exception(type, value, tb)
+            print >> sys.stderr, ''.join(lines)
+            if self.reraise:
+                raise
+            else:
+                return 'FAILED'
+
+
+def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rtol=None, smax=1e12, verbose=False, do_rank1=True, do_stepscale=True, callback=None, reject_errors=False):
     '''Minimize a function with a basic CMA algorithm
 
        **Arguments:**
@@ -205,6 +225,12 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rt
        callback
             If given, this routine is called after each update of the covariance
             model. One argument is given, i.e. the covariance model.
+
+       reject_errors
+            When set to True, exceptions in fun will be caught and the
+            corresponding trials will be rejected. If there are too many
+            rejected attempts in one iteration, such that the number of
+            successful ones is below cm.nselect, the algorithm will still fail.
     '''
 
     # A) Parse the arguments:
@@ -255,7 +281,13 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rt
         xs = cm.generate()
 
         # compute the function values
-        fs = np.array(context.map(fun, xs))
+        if reject_errors:
+            fs = context.map(WorkerWrapper(fun), xs)
+            fs = np.array([value for value in fs if value != 'FAILED'])
+            if len(fs) < cm.nselect:
+                raise RuntimeError('Too many evaluations failed.')
+        else:
+            fs = np.array(context.map(fun, xs))
 
         # sort by function value and select
         select = fs.argsort()[:cm.nselect]

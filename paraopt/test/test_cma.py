@@ -73,3 +73,15 @@ def test_callback():
     assert len(lcb.log) == 10
     for item in lcb.log:
         assert item == ((cm,),{})
+
+
+def failing(x):
+    if np.random.uniform(0, 1) < 0.05:
+        raise ValueError
+    else:
+        return rosenbrock(x)
+
+
+def test_reject_errors():
+    m0 = np.random.uniform(2, 3, 2)
+    cm, status = fmin_cma(failing, m0, 1.0, npop=50, max_iter=10, rtol=1e-10, reject_errors=True)
