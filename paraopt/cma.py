@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Paraopt is a simple parallel optimization toolbox.
-# Copyright (C) 2012 Toon Verstraelen <Toon.Verstraelen@UGent.be>
+# Copyright (C) 2012-2013 Toon Verstraelen <Toon.Verstraelen@UGent.be>
 #
 # This file is part of Paraopt.
 #
@@ -22,13 +22,14 @@
 
 import numpy as np
 from scipy.special import gamma
-import time, sys, traceback
+import time
 
-from paraopt import context
+from paraopt.context import context
+from paraopt.common import WorkerWrapper
 
 
 __all__ = [
-    'fmin_cma', 'WorkerWrapper',
+    'fmin_cma',
 ]
 
 
@@ -145,25 +146,6 @@ class CovarianceModel(object):
         self.update_counter += 1
 
 
-class WorkerWrapper(object):
-    __name__ = 'WorkerWrapper'
-
-    def __init__(self, myfn, reraise=False):
-        self.myfn = myfn
-        self.reraise = reraise
-
-    def __call__(self, *args, **kwargs):
-        try:
-            return self.myfn(*args, **kwargs)
-        except:
-            type, value, tb = sys.exc_info()
-            lines = traceback.format_exception(type, value, tb)
-            print >> sys.stderr, ''.join(lines)
-            if self.reraise:
-                raise
-            else:
-                return 'FAILED'
-
 
 def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rtol=None, smax=1e12, verbose=False, do_rank1=True, do_stepscale=True, callback=None, reject_errors=False):
     '''Minimize a function with a basic CMA algorithm
@@ -260,12 +242,12 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rt
 
     # B) The main loop
     if verbose:
-        print 'Iteration   max(sigmas)   min(sigmas)       min(fs)     range(fs) linear  path-sigma-ratio  walltime[s]'
+        print 'Iteration   min(sigmas)   max(sigmas)       min(fs)     range(fs) linear  path-sigma-ratio  walltime[s]'
     time0 = time.time()
     for i in xrange(max_iter):
         # screen info
         if verbose:
-            print '%9i  % 12.5e  % 12.5e' % (i, cm.max_sigma, cm.min_sigma),
+            print '%9i  % 12.5e  % 12.5e' % (i, cm.min_sigma, cm.max_sigma),
         if cm.max_sigma < stol:
             if verbose: print
             return cm, 'CONVERGED_SIGMA'

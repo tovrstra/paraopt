@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Paraopt is a simple parallel optimization toolbox.
-# Copyright (C) 2012 Toon Verstraelen <Toon.Verstraelen@UGent.be>
+# Copyright (C) 2012-2013 Toon Verstraelen <Toon.Verstraelen@UGent.be>
 #
 # This file is part of Paraopt.
 #
@@ -24,9 +24,11 @@ __all__ = ['context']
 
 
 
-class SubmitStub(object):
-    def __init__(self, fun, *args, **kwargs):
-        self._result = fun(*args, **kwargs)
+class FakeFuture(object):
+    def __init__(self, fun, *args, **kargs):
+        self.args = args
+        self.kargs = kargs
+        self._result = fun(*args, **kargs)
 
     def result(self):
         return self._result
@@ -38,16 +40,22 @@ class Context(object):
         self.use_stub()
 
     def use_stub(self):
-        def mymap(fn, l, **kwargs):
+        def my_map(fn, l, **kwargs):
             return [fn(i, **kwargs) for i in l]
-        self.map = mymap
-        self.submit = SubmitStub
+        def my_wait_first(fs):
+            return fs[:1], fs[1:]
+        self.map = my_map
+        self.wait_first = my_wait_first
+        self.submit = FakeFuture
 
     def use_scoop(self):
         from scoop import futures
-        def mymap(*args, **kwargs):
+        def my_map(*args, **kwargs):
             return list(futures.map(*args, **kwargs))
-        self.map = mymap
+        def my_wait_first(fs):
+            return futures.wait(fs, return_when=futures.FIRST_COMPLETED)
+        self.map = my_map
+        self.wait_first = my_wait_first
         self.submit = futures.submit
 
 

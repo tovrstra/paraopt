@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Paraopt is a simple parallel optimization toolbox.
-# Copyright (C) 2012 Toon Verstraelen <Toon.Verstraelen@UGent.be>
+# Copyright (C) 2012-2013 Toon Verstraelen <Toon.Verstraelen@UGent.be>
 #
 # This file is part of Paraopt.
 #
@@ -20,5 +20,7 @@
 #--
 
 from paraopt.context import *
+from paraopt.common import *
 
+from paraopt.async import *
 from paraopt.cma import *

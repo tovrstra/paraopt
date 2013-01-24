@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Paraopt is a simple parallel optimization toolbox.
-# Copyright (C) 2012 Toon Verstraelen <Toon.Verstraelen@UGent.be>
+# Copyright (C) 2012-2013 Toon Verstraelen <Toon.Verstraelen@UGent.be>
 #
 # This file is part of Paraopt.
 #
@@ -22,10 +22,7 @@
 
 import numpy as np
 from paraopt import *
-
-
-def harmonic(x):
-    return 0.5*x[0]**2
+from common import *
 
 
 def test_harmonic():
@@ -35,10 +32,6 @@ def test_harmonic():
         assert status == 'CONVERGED_SIGMA'
         assert abs(cm.m - 0.0).max() < 1e-3
         assert harmonic(cm.m) < 1e-6
-
-
-def rosenbrock(x):
-    return (1-x[0])**2 + 100*(x[1]-x[0]**2)**2
 
 
 def test_rosenbrock1():
@@ -58,14 +51,6 @@ def test_rosenbrock2():
         assert rosenbrock(cm.m) < 0.3
 
 
-class LogCallback(object):
-    def __init__(self):
-        self.log = []
-
-    def __call__(self, *args, **kwargs):
-        self.log.append((args, kwargs))
-
-
 def test_callback():
     lcb = LogCallback()
     m0 = np.random.uniform(2, 3, 2)
@@ -73,13 +58,6 @@ def test_callback():
     assert len(lcb.log) == 10
     for item in lcb.log:
         assert item == ((cm,),{})
-
-
-def failing(x):
-    if np.random.uniform(0, 1) < 0.05:
-        raise ValueError
-    else:
-        return rosenbrock(x)
 
 
 def test_reject_errors():
