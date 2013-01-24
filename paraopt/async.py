@@ -90,7 +90,7 @@ class Population(object):
 
         # Build a new model for the next sample
         if len(self.members) == 1:
-            return [0]
+            return [0.0]
         else:
             # determine weights
             ws = self.weights[:len(self.members)]
@@ -225,9 +225,13 @@ def fmin_async(fun, x0, sigma0, npop=None, nworker=None, max_iter=100, stol=1e-6
                     elif evals[-1] < stol:
                         return p, 'CONVERGED_SIGMA'
                 if print_now:
+                    if evals[0] == 0.0:
+                        cn = 0.0
+                    else:
+                        cn = evals[-1]/evals[0]
                     print '%9i  %12.5e  %12.5e  %12.5e  %3i    %12.5e  %12.5e   %16.3f' % (
                         counter, f, p.members[0][0], p.members[-1][0], len(p.members),
-                        evals[-1], evals[-1]/evals[0], time.time()-time0
+                        evals[-1], cn, time.time()-time0
                     )
             if callback is not None:
                 callback(p)
