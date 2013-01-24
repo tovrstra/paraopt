@@ -147,7 +147,7 @@ class CovarianceModel(object):
 
 
 
-def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rtol=None, smax=1e12, verbose=False, do_rank1=True, do_stepscale=True, callback=None, reject_errors=False):
+def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cnmax=1e6, stol=1e-12, rtol=None, smax=1e12, verbose=False, do_rank1=True, do_stepscale=True, callback=None, reject_errors=False):
     '''Minimize a function with a basic CMA algorithm
 
        **Arguments:**
@@ -174,7 +174,7 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rt
        max_iter
             The maximum number of iterations
 
-       cntol
+       cnmax
             When the condition number of the covariance goes above this
             threshold, the minimum is considered degenerate and the optimizer
             stops.
@@ -234,7 +234,7 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rt
         print '  Maximum iterations:    %10i' % max_iter
         print '  Sigma tolerance:       %10.3e' % stol
         print '  Sigma maximum:         %10.3e' % smax
-        print '  Condition threshold:   %10.3e' % cntol
+        print '  Condition maximum:     %10.3e' % cnmax
         if rtol is not None:
             print '  Range threshold:       %10.3e' % rtol
         print '  Do rank-1 update:      %10s' % do_rank1
@@ -251,7 +251,7 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cntol=1e6, stol=1e-12, rt
         if cm.max_sigma < stol:
             if verbose: print
             return cm, 'CONVERGED_SIGMA'
-        elif cm.max_sigma > cm.min_sigma*cntol:
+        elif cm.max_sigma > cm.min_sigma*cnmax:
             if verbose: print
             return cm, 'FAILED_DEGENERATE'
         elif cm.max_sigma > smax:

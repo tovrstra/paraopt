@@ -114,6 +114,63 @@ class Population(object):
 
 
 def fmin_async(fun, x0, sigma0, npop=None, nworker=None, max_iter=100, stol=1e-6, smax=1e6, cnmax=1e6, verbose=False, callback=None, reject_errors=False, loss_rate=0.0):
+    '''Minimize a function with an experimental asynchronous CMA variant
+
+       **Arguments:**
+
+       fun
+           The function to be minimized. It is recommended to use scoop for
+           internal parallelization.
+
+       x0
+            The initial guess. (numpy vector, shape=n)
+
+       sigma0
+            The initial value of the step size
+
+
+       **Optional arguments:**
+
+       npop
+            The size of the sample population. By default, this is
+            8 + 2*ndof.
+
+       max_iter
+            The maximum number of iterations
+
+       cnmax
+            When the condition number of the covariance goes above this
+            threshold, the minimum is considered degenerate and the optimizer
+            stops.
+
+       stol
+            When the largest sqrt(covariance eigenvalue) drops below this value,
+            the solution is sufficiently close to the real optimum and the
+            optimization has converged.
+
+       smax
+            When the largest sqrt(covariance eigenvalue) exceeds this value,
+            the CMA algorithm is terminated due to divergence.
+
+       verbose
+            When set to True, some convergence info is printed on screen. When
+            set to an integer larger than one, it is interpreted as the interval
+            with wich the convergence info must be printed.
+
+       callback
+            If given, this routine is called after each update of the covariance
+            model. One argument is given, i.e. the covariance model.
+
+       reject_errors
+            When set to True, exceptions in fun will be caught and the
+            corresponding trials will be rejected. If there are too many
+            rejected attempts in one iteration, such that the number of
+            successful ones is below cm.nselect, the algorithm will still fail.
+
+       loss_rate
+            The probability that a random member from the current population is
+            discarded.
+    '''
     workers = []
     p = Population(x0, sigma0, npop, loss_rate)
 
@@ -123,7 +180,15 @@ def fmin_async(fun, x0, sigma0, npop=None, nworker=None, max_iter=100, stol=1e-6
     counter = 0
     time0 = time.time()
     if verbose:
-        print 'Iteration       Current          Best         Worst  Pop     min(sigmas)   max(sigmas)        walltime[s]'
+        print 'Async CMA parameters'
+        print '  Number of unknowns:    %10i' % p.ndof
+        print '  Population size:       %10i' % p.npop
+        print '  Sigma tolerance:       %10.3e' % stol
+        print '  Sigma maximum:         %10.3e' % smax
+        print '  Condition maximum:     %10.3e' % cnmax
+        print '  Loss rate:             %10.3f' % loss_rate
+
+        print 'Iteration       Current          Best         Worst  Pop     max(sigmas)    cn(sigmas)        walltime[s]'
         print '---------------------------------------------------------------------------------------------------------'
 
     while counter < max_iter:
@@ -157,7 +222,10 @@ def fmin_async(fun, x0, sigma0, npop=None, nworker=None, max_iter=100, stol=1e-6
                     elif evals[-1] < stol:
                         return p, 'CONVERGED_SIGMA'
                 if print_now:
-                    print '%9i  %12.5e  %12.5e  %12.5e  %3i    %12.5e  %12.5e   %16.3f' % (counter, f, p.members[0][0], p.members[-1][0], len(p.members), evals[0], evals[-1], time.time()-time0)
+                    print '%9i  %12.5e  %12.5e  %12.5e  %3i    %12.5e  %12.5e   %16.3f' % (
+                        counter, f, p.members[0][0], p.members[-1][0], len(p.members),
+                        evals[-1], evals[-1]/evals[0], time.time()-time0
+                    )
             if callback is not None:
                 callback(p)
         workers = list(todo)
