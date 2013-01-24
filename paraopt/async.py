@@ -59,7 +59,10 @@ class Population(object):
     complete = property(_get_complete)
 
     def _get_best(self):
-        return self.members[0][1]
+        if len(self.members) > 0:
+            return self.members[0][1]
+        else:
+            return self.m
 
     best = property(_get_best)
 

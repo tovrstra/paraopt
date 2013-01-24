@@ -88,4 +88,11 @@ def test_callback():
 
 def test_reject_errors():
     x0 = np.random.uniform(2, 3, 2)
-    cm, status = fmin_async(failing, x0, 1.0, max_iter=10, reject_errors=True)
+    p, status = fmin_async(failing, x0, 1.0, max_iter=10, reject_errors=True)
+
+
+def test_best_empty():
+    x0 = np.random.uniform(2, 3, 2)
+    p, status = fmin_async(failing, x0, 1.0, max_iter=10, reject_errors=True)
+    p.members = []
+    assert (p.best == x0).all()
