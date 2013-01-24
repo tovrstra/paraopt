@@ -102,13 +102,13 @@ class Population(object):
             cm = np.dot(ys.T*ws, ys)/ws.sum()
             if self.complete:
                 evals, self.evecs = np.linalg.eigh(cm)
-                self.sigmas = np.sqrt(evals)
             else:
                 if cm.shape == ():
                     evals = np.array([cm])
                 else:
                     evals = np.linalg.eigvalsh(cm)
-                self.sigmas = np.sqrt(evals)
+
+            self.sigmas = np.sqrt(abs(evals))
 
             return self.sigmas
 
