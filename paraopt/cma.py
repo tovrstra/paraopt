@@ -84,22 +84,19 @@ class CovarianceModel(object):
     def _update_derived(self):
         # Compute derived properties from the covariance matrix
         self.evals, self.evecs = np.linalg.eigh(self.covar)
-        self.sigmas = self.evals**0.5
-        self.max_sigma = abs(self.sigmas).max()*self.sigma
-        self.min_sigma = abs(self.sigmas).min()*self.sigma
-        self.inv_root_covar = np.dot(self.evecs/self.sigmas, self.evecs.T)
+        self.widths = self.evals**0.5
+        self.max_width = abs(self.widths).max()*self.sigma
+        self.min_width = abs(self.widths).min()*self.sigma
+        self.inv_root_covar = np.dot(self.evecs/self.widths, self.evecs.T)
 
     def generate(self):
         xs = np.random.normal(0, self.sigma, (self.npop, self.ndof))
-        xs *= self.sigmas
+        xs *= self.widths
         xs = np.dot(xs, self.evecs)
         xs += self.m
         return xs
 
-    def update_covar(self, xs, fs):
-        # transform xs to reduced displacements
-        ys = (xs - self.m)/self.sigma # must be done with old mean!
-
+    def update_covar(self, xs, ys, fs):
         # compute the new mean
         new_m = np.dot(self.weights, xs)
 
@@ -147,7 +144,7 @@ class CovarianceModel(object):
 
 
 
-def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cnmax=1e6, stol=1e-12, rtol=None, smax=1e12, verbose=False, do_rank1=True, do_stepscale=True, callback=None, reject_errors=False):
+def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cnmax=1e6, wtol=1e-12, rtol=None, wmax=1e12, verbose=False, do_rank1=True, do_stepscale=True, callback=None, reject_errors=False):
     '''Minimize a function with a basic CMA algorithm
 
        **Arguments:**
@@ -179,14 +176,14 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cnmax=1e6, stol=1e-12, rt
             threshold, the minimum is considered degenerate and the optimizer
             stops.
 
-       stol
-            When the largest sqrt(covariance eigenvalue) drops below this value,
-            the solution is sufficiently close to the real optimum and the
-            optimization has converged.
+       wtol
+            When the largest width, sqrt(covariance eigenvalue), drops below
+            this value, the solution is sufficiently close to the real optimum
+            and the optimization has converged.
 
-       smax
-            When the largest sqrt(covariance eigenvalue) exceeds this value,
-            the CMA algorithm is terminated due to divergence.
+       wmax
+            When the largest width, sqrt(covariance eigenvalue), exceeds this
+            value, the CMA algorithm is terminated due to divergence.
 
        rtol
             When the range of the selected results drops below this threshold,
@@ -232,8 +229,8 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cnmax=1e6, stol=1e-12, rt
         print '  Sigma learning rate:   %10.5f' % cm.c_path_sigma
         print '  Sigma damping:         %10.5f' % cm.d_path_sigma
         print '  Maximum iterations:    %10i' % max_iter
-        print '  Sigma tolerance:       %10.3e' % stol
-        print '  Sigma maximum:         %10.3e' % smax
+        print '  Width tolerance:       %10.3e' % wtol
+        print '  Width maximum:         %10.3e' % wmax
         print '  Condition maximum:     %10.3e' % cnmax
         if rtol is not None:
             print '  Range threshold:       %10.3e' % rtol
@@ -242,19 +239,23 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cnmax=1e6, stol=1e-12, rt
 
     # B) The main loop
     if verbose:
-        print 'Iteration   min(sigmas)   max(sigmas)       min(fs)     range(fs) linear  path-sigma-ratio  walltime[s]'
+        print 'Iteration   max(widths)  cond(widths)       min(fs)     range(fs) linear  path-sigma-ratio  walltime[s]'
     time0 = time.time()
     for i in xrange(max_iter):
         # screen info
         if verbose:
-            print '%9i  % 12.5e  % 12.5e' % (i, cm.min_sigma, cm.max_sigma),
-        if cm.max_sigma < stol:
+            if cm.min_width > 0:
+                cond = cm.max_width/cm.min_width
+            else:
+                cond = 0.0
+            print '%9i  % 12.5e  % 12.5e' % (i, cm.max_width, cond),
+        if cm.max_width < wtol:
             if verbose: print
-            return cm, 'CONVERGED_SIGMA'
-        elif cm.max_sigma > cm.min_sigma*cnmax:
+            return cm, 'CONVERGED_WIDTH'
+        elif cm.max_width > cm.min_width*cnmax:
             if verbose: print
             return cm, 'FAILED_DEGENERATE'
-        elif cm.max_sigma > smax:
+        elif cm.max_width > wmax:
             # This typically happens when the initial step size is too small
             if verbose: print
             return cm, 'FAILED_DIVERGENCE'
@@ -277,6 +278,9 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cnmax=1e6, stol=1e-12, rt
         fs = fs[select]
         frange = fs[-1] - fs[0]
 
+        # compute rescaled displacemets
+        ys = (xs - cm.m)/cm.sigma
+
         # screen info
         if verbose:
             print ' % 12.5e  % 12.5e' % (fs[0], frange),
@@ -287,7 +291,7 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cnmax=1e6, stol=1e-12, rt
             return cm, 'CONVERGED_RANGE'
 
         # determine the new mean and covariance
-        cm.update_covar(xs, fs)
+        cm.update_covar(xs, ys, fs)
         if verbose:
             if cm.linear_slope:
                 print 'L',

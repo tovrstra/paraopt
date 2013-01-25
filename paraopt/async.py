@@ -49,6 +49,7 @@ class Population(object):
         self.members = []
 
         if mixing_cov is None:
+            #self.mixing_cov = 1.0/(2+self.ndof)**2
             self.mixing_cov = 1.0/(4+self.ndof)
         else:
             self.mixing_cov = mixing_cov
@@ -183,7 +184,7 @@ def fmin_async(fun, x0, sigma0, npop=None, nworker=None, max_iter=100, stol=1e-6
         print '  Sigma maximum:         %10.3e' % smax
         print '  Condition maximum:     %10.3e' % cnmax
         print '  Loss rate:             %10.3f' % p.loss_rate
-        print '  Covariance mixing:     %10.3f' % p.mixing_cov
+        print '  Covariance mixing:     %10.3e' % p.mixing_cov
 
         print 'Iteration       Current          Best         Worst  Pop     max(sigmas)    cn(sigmas)        walltime[s]'
         print '---------------------------------------------------------------------------------------------------------'

@@ -30,7 +30,7 @@ from common import *
 def test_harmonic1():
     for i in xrange(10):
         x0 = np.random.uniform(-1,3, 1)
-        p, status = fmin_async(harmonic, x0, 1.0, max_iter=10000, verbose=50)
+        p, status = fmin_async(harmonic, x0, 1.0, stol=1e-2, max_iter=10000, verbose=50)
         assert status == 'CONVERGED_SIGMA'
         assert harmonic(p.best) < 1e-3
 
@@ -59,7 +59,7 @@ def test_harmonic_noise_loss():
         assert harmonic(p.best) < 1e-2
 
 
-def test_rosenbrock():
+def test_rosenbrock2():
     for i in xrange(10):
         x0 = np.random.uniform(-1,3, 2)
         p, status = fmin_async(rosenbrock, x0, 1.0, max_iter=20000, stol=1e-10, npop=None, verbose=100)
@@ -68,7 +68,7 @@ def test_rosenbrock():
             assert rosenbrock(p.best) < 1e-2
 
 
-def test_rosenbrock_loss():
+def test_rosenbrock2_loss():
     for i in xrange(10):
         x0 = np.random.uniform(-1,3, 2)
         p, status = fmin_async(rosenbrock, x0, 1.0, max_iter=20000, stol=1e-10, npop=None, verbose=100, loss_rate=0.1)
