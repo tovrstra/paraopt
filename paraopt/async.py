@@ -44,14 +44,18 @@ class Population(object):
         self.npop = npop
 
         self.m = m0
-        self.sigma0 = sigma0
+        self.cov = np.identity(self.ndof)*sigma0**2
         self.loss_rate = loss_rate
         self.members = []
 
+        self.mixing_m = 1.0/self.ndof
+        self.mixing_cov = 0.5/self.ndof**2
         self.weights = np.log(self.npop+1) - np.log(np.arange(self.npop)+1)
         #self.weights = np.ones(self.npop)
-        assert (self.weights > 0).all()
-        self.weights /= self.weights.sum()
+        #assert (self.weights > 0).all()
+        #self.weights /= self.weights.sum()
+
+        self.analyze_cov()
 
     def _get_complete(self):
         return len(self.members) == self.npop
@@ -67,53 +71,40 @@ class Population(object):
     best = property(_get_best)
 
     def sample(self):
-        if self.complete:
-            xs = np.random.normal(0, 1.0, self.ndof)
-            xs *= self.sigmas
-            xs = np.dot(self.evecs, xs)
-            xs += self.m
-            return xs
-        else:
-            return self.m + np.random.uniform(-self.sigma0, self.sigma0, self.m.shape)
+        xs = np.random.normal(0, 1.0, self.ndof)
+        xs *= self.sigmas
+        xs = np.dot(self.evecs, xs)
+        xs += self.m
+        return xs
 
     def add_new(self, f, x, m):
-        # Add new member
-        bisect.insort(self.members, (f, x, m))
+        if len(self.members) < self.npop or f < self.members[-1][0]:
+            # Add new member
+            self.members.append((f, x, m))
+            self.members.sort(key=(lambda item: item[0]))
 
-        # Throw one out if needed
-        if len(self.members) > self.npop:
-            # This is a minimization, i.e. remove largest
-            if np.random.uniform(0,1) > self.loss_rate:
-                del self.members[-1]
-            else:
-                del self.members[np.random.randint(self.npop)]
-
-        # Build a new model for the next sample
-        if len(self.members) == 1:
-            return [0.0]
-        else:
-            # determine weights
-            ws = self.weights[:len(self.members)]
-
-            # New mean
-            if self.complete:
-                xs = np.array([x for f, x, m in self.members])
-                self.m = np.dot(ws, xs)/ws.sum()
-
-            # New covariance
-            ys = np.array([x-m for f, x, m in self.members])
-            cm = np.dot(ys.T*ws, ys)/ws.sum()
-            if self.complete:
-                evals, self.evecs = np.linalg.eigh(cm)
-            else:
-                if cm.shape == ():
-                    evals = np.array([cm])
+            # Throw one out if needed
+            if len(self.members) > self.npop:
+                # This is a minimization, i.e. remove largest
+                if np.random.uniform(0,1) > self.loss_rate:
+                    del self.members[-1]
                 else:
-                    evals = np.linalg.eigvalsh(cm)
+                    del self.members[np.random.randint(self.npop)]
 
-            self.sigmas = np.sqrt(abs(evals))
+            #self.m *= (1-self.mixing_m)
+            #self.m += self.mixing_m*x
+            xs = np.array([x for f, x, m in self.members])
+            ws = self.weights[:len(xs)]
+            self.m = np.dot(ws, xs)/ws.sum()
+            self.cov *= (1-self.mixing_cov)
+            self.cov += self.mixing_cov*np.outer(x-m, x-m)
 
-            return self.sigmas
+            self.analyze_cov()
+        return self.sigmas
+
+    def analyze_cov(self):
+        evals, self.evecs = np.linalg.eigh(self.cov)
+        self.sigmas = np.sqrt(abs(evals))
 
 
 def fmin_async(fun, x0, sigma0, npop=None, nworker=None, max_iter=100, stol=1e-6, smax=1e6, cnmax=1e6, verbose=False, callback=None, reject_errors=False, loss_rate=0.0):
