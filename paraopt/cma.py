@@ -29,7 +29,7 @@ from paraopt.common import WorkerWrapper
 
 
 __all__ = [
-    'fmin_cma',
+    'fmin_cma', 'fmin_cma_async',
 ]
 
 
@@ -84,19 +84,25 @@ class CovarianceModel(object):
     def _update_derived(self):
         # Compute derived properties from the covariance matrix
         self.evals, self.evecs = np.linalg.eigh(self.covar)
-        self.widths = self.evals**0.5
+        self.widths = abs(self.evals)**0.5
         self.max_width = abs(self.widths).max()*self.sigma
         self.min_width = abs(self.widths).min()*self.sigma
+        if self.min_width <= 0:
+            self.cond = 0.0
+        else:
+            self.cond = self.max_width/self.min_width
         self.inv_root_covar = np.dot(self.evecs/self.widths, self.evecs.T)
 
-    def generate(self):
-        xs = np.random.normal(0, self.sigma, (self.npop, self.ndof))
+    def generate(self, npop=None):
+        if npop is None:
+            npop = self.npop
+        xs = np.random.normal(0, self.sigma, (npop, self.ndof))
         xs *= self.widths
         xs = np.dot(xs, self.evecs)
         xs += self.m
         return xs
 
-    def update_covar(self, xs, ys, fs):
+    def update_covar(self, xs, ys):
         # compute the new mean
         new_m = np.dot(self.weights, xs)
 
@@ -291,7 +297,7 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cnmax=1e6, wtol=1e-12, rt
             return cm, 'CONVERGED_RANGE'
 
         # determine the new mean and covariance
-        cm.update_covar(xs, ys, fs)
+        cm.update_covar(xs, ys)
         if verbose:
             if cm.linear_slope:
                 print 'L',
@@ -307,3 +313,118 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cnmax=1e6, wtol=1e-12, rt
             callback(cm)
 
     return cm, 'FAILED_MAX_ITER'
+
+
+def fmin_cma_async(fun, m0, sigma0, npop=None, nworker=None, max_iter=100, cnmax=1e6, wtol=1e-12, wmax=1e12, verbose=False, do_rank1=True, do_stepscale=True, callback=None, reject_errors=False):
+    # A) Parse the arguments:
+    cm = CovarianceModel(m0, sigma0, npop, do_rank1, do_stepscale)
+    if not isinstance(cm.npop, int) or cm.npop < 1:
+        raise ValueError('npop must be a strictly positive integer.')
+    if nworker is None:
+        nworker = cm.npop
+
+    if verbose:
+        print 'Asynchronous CMA parameters'
+        print '  Number of unknowns:    %10i' % cm.ndof
+        print '  Number of workers:     %10i' % nworker
+        print '  Population size:       %10i' % cm.npop
+        print '  Selection size:        %10i' % cm.nselect
+        print '  Effective size:        %10.5f' % cm.mu_eff
+        print '  Rank-1 learning rate:  %10.5f' % cm.c_1
+        print '  Rank-mu learning rate: %10.5f' % cm.c_mu
+        print '  Cumul learning rate:   %10.5f' % cm.c_path_c
+        print '  Sigma learning rate:   %10.5f' % cm.c_path_sigma
+        print '  Sigma damping:         %10.5f' % cm.d_path_sigma
+        print '  Maximum iterations:    %10i' % max_iter
+        print '  Width tolerance:       %10.3e' % wtol
+        print '  Width maximum:         %10.3e' % wmax
+        print '  Condition maximum:     %10.3e' % cnmax
+        print '  Do rank-1 update:      %10s' % do_rank1
+        print '  Do step size update:   %10s' % do_stepscale
+
+    # B) The main loop
+    if verbose:
+        print '-------------------------------------+-------------------------------------------------------'
+        print 'Iteration       min(fs)    range(fs) |  max(sigmas)   cn(signas) lin   p-s-ratio  walltime[s]'
+        print '-------------------------------------+-------------------------------------------------------'
+
+    time0 = time.time()
+    counter = 0
+    purgatory = []
+    workers = []
+    while True:
+        # make sure there are enough workers
+        while len(workers) < nworker:
+            x = cm.generate(1)[0]
+            if reject_errors:
+                worker = context.submit(WorkerWrapper(fun), x)
+            else:
+                worker = context.submit(fun, x)
+            worker.m = cm.m.copy()
+            worker.sigma = cm.sigma
+            workers.append(worker)
+
+        # wait until one is ready
+        done, todo = context.wait_first(workers)
+        for worker in done:
+            f = worker.result()
+            if f == 'FAILED':
+                continue
+            x = worker.args[0]
+            m = worker.m
+            sigma = worker.sigma
+            purgatory.append((f, x, m, sigma))
+        workers = list(todo)
+
+        if len(purgatory) >= cm.npop:
+            # Update covariance
+            purgatory.sort(key=(lambda item: item[0]))
+            xs = []
+            ys = []
+            fs = []
+            for i in xrange(cm.nselect):
+                f, x, m, sigma = purgatory[i]
+                xs.append(x)
+                ys.append((x-m)/sigma)
+                fs.append(f)
+            xs = np.array(xs)
+            ys = np.array(ys)
+            fs = np.array(fs)
+            cm.update_covar(xs, ys)
+
+            # Print screen output
+            if verbose:
+                if cm.linear_slope:
+                    linear_str = 'L'
+                else:
+                    linear_str = ' '
+                if cm.do_rank1 or cm.do_stepscale:
+                    ratio_str = '% 12.5e' % cm.path_sigma_ratio
+                else:
+                    ratio_str = '            '
+                print '%9i  %12.5e %12.5e | %12.5e %12.5e  %s %s %12.3f' % (
+                    counter, fs[0], fs[-1]-fs[0],
+                    cm.max_width, cm.cond, linear_str,
+                    ratio_str, time.time()-time0
+                )
+
+            # Do the callback
+            if callback is not None:
+                callback(cm)
+
+            # prepare for next batch
+            counter += 1
+            purgatory = []
+
+            # check convergence
+            if cm.max_width < wtol:
+                return cm, 'CONVERGED_WIDTH'
+            elif cm.max_width > cm.min_width*cnmax:
+                return cm, 'FAILED_DEGENERATE'
+            elif cm.max_width > wmax:
+                # This typically happens when the initial step size is too small
+                return cm, 'FAILED_DIVERGENCE'
+            elif counter >= max_iter:
+                return cm, 'FAILED_MAX_ITER'
+
+    assert False

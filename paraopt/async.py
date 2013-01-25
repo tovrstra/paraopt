@@ -198,6 +198,7 @@ def fmin_async(fun, x0, sigma0, npop=None, nworker=None, max_iter=100, stol=1e-6
                 worker = context.submit(fun, p.sample())
             worker.m = p.m.copy()
             workers.append(worker)
+
         # wait until one is ready
         done, todo = context.wait_first(workers)
         for worker in done:
