@@ -33,7 +33,7 @@ __all__ = [
 
 
 class Population(object):
-    def __init__(self, m0, sigma0, npop=None, loss_rate=0.0):
+    def __init__(self, m0, sigma0, npop=None, loss_rate=0.0, mixing_cov=None):
         self.ndof = len(m0)
 
         # Population size
@@ -48,12 +48,12 @@ class Population(object):
         self.loss_rate = loss_rate
         self.members = []
 
-        self.mixing_m = 1.0/self.ndof
-        self.mixing_cov = 0.5/self.ndof**2
+        if mixing_cov is None:
+            self.mixing_cov = 1.0/(4+self.ndof)
+        else:
+            self.mixing_cov = mixing_cov
         self.weights = np.log(self.npop+1) - np.log(np.arange(self.npop)+1)
-        #self.weights = np.ones(self.npop)
         #assert (self.weights > 0).all()
-        #self.weights /= self.weights.sum()
 
         self.analyze_cov()
 
@@ -91,8 +91,6 @@ class Population(object):
                 else:
                     del self.members[np.random.randint(self.npop)]
 
-            #self.m *= (1-self.mixing_m)
-            #self.m += self.mixing_m*x
             xs = np.array([x for f, x, m in self.members])
             ws = self.weights[:len(xs)]
             self.m = np.dot(ws, xs)/ws.sum()
@@ -107,7 +105,7 @@ class Population(object):
         self.sigmas = np.sqrt(abs(evals))
 
 
-def fmin_async(fun, x0, sigma0, npop=None, nworker=None, max_iter=100, stol=1e-6, smax=1e6, cnmax=1e6, verbose=False, callback=None, reject_errors=False, loss_rate=0.0):
+def fmin_async(fun, x0, sigma0, npop=None, nworker=None, max_iter=100, stol=1e-6, smax=1e6, cnmax=1e6, verbose=False, callback=None, reject_errors=False, loss_rate=0.0, mixing_cov=None):
     '''Minimize a function with an experimental asynchronous CMA variant
 
        **Arguments:**
@@ -164,9 +162,13 @@ def fmin_async(fun, x0, sigma0, npop=None, nworker=None, max_iter=100, stol=1e-6
        loss_rate
             The probability that a random member from the current population is
             discarded.
+
+       mixing_cov
+            The mixing coefficient for the covariance matrix. This defaults
+            to 1/(4+ndof).
     '''
     workers = []
-    p = Population(x0, sigma0, npop, loss_rate)
+    p = Population(x0, sigma0, npop, loss_rate, mixing_cov)
 
     if nworker is None:
         nworker = p.npop
@@ -180,14 +182,14 @@ def fmin_async(fun, x0, sigma0, npop=None, nworker=None, max_iter=100, stol=1e-6
         print '  Sigma tolerance:       %10.3e' % stol
         print '  Sigma maximum:         %10.3e' % smax
         print '  Condition maximum:     %10.3e' % cnmax
-        print '  Loss rate:             %10.3f' % loss_rate
+        print '  Loss rate:             %10.3f' % p.loss_rate
+        print '  Covariance mixing:     %10.3f' % p.mixing_cov
 
         print 'Iteration       Current          Best         Worst  Pop     max(sigmas)    cn(sigmas)        walltime[s]'
         print '---------------------------------------------------------------------------------------------------------'
 
     while counter < max_iter:
         # make sure there are enough workers
-        # TODO: add optional argument for number of workers
         while len(workers) < nworker:
             if reject_errors:
                 worker = context.submit(WorkerWrapper(fun), p.sample())
