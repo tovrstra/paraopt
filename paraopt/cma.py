@@ -34,11 +34,12 @@ __all__ = [
 
 
 class CovarianceModel(object):
-    def __init__(self, m0, sigma0, npop, do_rank1, do_stepscale):
+    def __init__(self, m0, sigma0, npop, do_rank1, do_stepscale, hof_rate=1.0):
         # Features
         self.do_rank1 = do_rank1
         self.do_stepscale = do_stepscale
         self.linear_slope = False
+        self.hof_rate = hof_rate
 
         # Initialize state
         self.m = np.array(m0, dtype=float)
@@ -53,6 +54,7 @@ class CovarianceModel(object):
         self.sigma = float(sigma0)
         self.covar = np.identity(self.ndof, dtype=float)
         self._update_derived()
+        self.hof = []
 
         # Set algorithm parameters
         self.weights = np.log(0.5*(self.npop+1)) - np.log(np.arange(self.nselect)+1)
@@ -82,7 +84,7 @@ class CovarianceModel(object):
         self.update_counter = 0
 
     def _update_derived(self):
-        # Compute derived properties from the covariance matrix
+        '''Compute derived properties from the covariance matrix'''
         self.evals, self.evecs = np.linalg.eigh(self.covar)
         self.widths = abs(self.evals)**0.5
         self.max_width = abs(self.widths).max()*self.sigma
@@ -94,6 +96,7 @@ class CovarianceModel(object):
         self.inv_root_covar = np.dot(self.evecs/self.widths, self.evecs.T)
 
     def generate(self, npop=None):
+        '''Generate a set of new samples based on the latest distribution'''
         if npop is None:
             npop = self.npop
         xs = np.random.normal(0, self.sigma, (npop, self.ndof))
@@ -102,9 +105,28 @@ class CovarianceModel(object):
         xs += self.m
         return xs
 
-    def update_covar(self, xs, ys):
+    def update(self, xs, ys, fs):
+        '''Update the mean and the covariance based on a set of accepted samples'''
+        # update the hall of fame (hof)
+        #  A) clean
+        if self.hof_rate == 1.0:
+            self.hof = []
+        else:
+            number_to_clean = int(np.floor(self.hof_rate*self.nselect))
+            for i in xrange(number_to_clean):
+                del self.hof[np.random.randint(len(self.hof))]
+        #  B) add
+        for i in xrange(self.nselect):
+            self.hof.append((xs[i], fs[i]))
+        #  C) sort
+        self.hof.sort(key=(lambda item: item[1]))
+        #  D) chop
+        self.hof = self.hof[:self.nselect]
+
         # compute the new mean
-        new_m = np.dot(self.weights, xs)
+        new_m = 0.0
+        for i in xrange(self.nselect):
+            new_m += self.weights[i]*self.hof[i][0]
 
         if self.do_rank1 or self.do_stepscale:
             # update the evolution path for the step size
@@ -118,17 +140,18 @@ class CovarianceModel(object):
             )
 
         if self.linear_slope or not self.do_rank1:
-            # update the covariance matrix
+            # The rank-one update is avoided if the cost function seems linear.
+            # Update the covariance matrix:
             self.covar = sum([
                 (1 - self.c_mu)*self.covar,
                 self.c_mu*np.dot(self.weights*ys.T, ys),
             ])
         else:
-            # update the evolution path for the cumulation effect
+            # Update the evolution path for the cumulation effect:
             self.path_c = (1-self.c_path_c)*self.path_c + \
                           self.norm_c*(new_m - self.m)/self.sigma
 
-            # update the covariance matrix
+            # Update the covariance matrix:
             self.covar = sum([
                 (1 - self.c_1 - self.c_mu)*self.covar,
                 self.c_1*np.outer(self.path_c, self.path_c),
@@ -150,7 +173,10 @@ class CovarianceModel(object):
 
 
 
-def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, wtol=1e-6, rtol=None, cnmax=1e6, wmax=1e6, verbose=False, do_rank1=True, do_stepscale=True, callback=None, reject_errors=False):
+def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, wtol=1e-6, rtol=None,
+             cnmax=1e6, wmax=1e6, verbose=False, do_rank1=True,
+             do_stepscale=True, callback=None, reject_errors=False,
+             hof_rate=1.0):
     '''Minimize a function with a basic CMA algorithm
 
        **Arguments:**
@@ -216,10 +242,15 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, wtol=1e-6, rtol=None, cnm
             corresponding trials will be rejected. If there are too many
             rejected attempts in one iteration, such that the number of
             successful ones is below cm.nselect, the algorithm will still fail.
+
+       hof_rate
+            The rate with which the hall of fame must be purged. The default
+            is 1.0, which corresponds to cleaning the hall of fame on every
+            update. This is equivalent to the conventional CMA.
     '''
 
     # A) Parse the arguments:
-    cm = CovarianceModel(m0, sigma0, npop, do_rank1, do_stepscale)
+    cm = CovarianceModel(m0, sigma0, npop, do_rank1, do_stepscale, hof_rate)
     if not isinstance(cm.npop, int) or cm.npop < 1:
         raise ValueError('npop must be a strictly positive integer.')
 
@@ -272,7 +303,7 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, wtol=1e-6, rtol=None, cnm
         ys = (xs - cm.m)/cm.sigma
 
         # determine the new mean and covariance
-        cm.update_covar(xs, ys)
+        cm.update(xs, ys, fs)
 
         # Print screen output
         if verbose:
@@ -306,7 +337,10 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, wtol=1e-6, rtol=None, cnm
     return cm, 'FAILED_MAX_ITER'
 
 
-def fmin_cma_async(fun, m0, sigma0, npop=None, nworker=None, max_iter=100, wtol=1e-12, cnmax=1e6, wmax=1e6, verbose=False, do_rank1=True, do_stepscale=True, callback=None, reject_errors=False):
+def fmin_cma_async(fun, m0, sigma0, npop=None, nworker=None, max_iter=100,
+                   wtol=1e-12, cnmax=1e6, wmax=1e6, verbose=False,
+                   do_rank1=True, do_stepscale=True, callback=None,
+                   reject_errors=False, hof_rate=1.0):
     '''Minimize a function with a basic CMA algorithm
 
        **Arguments:**
@@ -376,9 +410,14 @@ def fmin_cma_async(fun, m0, sigma0, npop=None, nworker=None, max_iter=100, wtol=
             corresponding trials will be rejected. If there are too many
             rejected attempts in one iteration, such that the number of
             successful ones is below cm.nselect, the algorithm will still fail.
+
+       hof_rate
+            The rate with which the hall of fame must be purged. The default
+            is 1.0, which corresponds to cleaning the hall of fame on every
+            update. This is equivalent to the conventional CMA.
     '''
     # A) Parse the arguments:
-    cm = CovarianceModel(m0, sigma0, npop, do_rank1, do_stepscale)
+    cm = CovarianceModel(m0, sigma0, npop, do_rank1, do_stepscale, hof_rate)
     if not isinstance(cm.npop, int) or cm.npop < 1:
         raise ValueError('npop must be a strictly positive integer.')
     if nworker is None:
@@ -451,7 +490,7 @@ def fmin_cma_async(fun, m0, sigma0, npop=None, nworker=None, max_iter=100, wtol=
             xs = np.array(xs)
             ys = np.array(ys)
             fs = np.array(fs)
-            cm.update_covar(xs, ys)
+            cm.update(xs, ys, fs)
 
             # Print screen output
             if verbose:

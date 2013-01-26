@@ -34,20 +34,28 @@ def test_harmonic1():
         assert harmonic(cm.m) < 1e-6
 
 
-def test_rosenbrock1():
+def test_rosenbrock():
     for i in xrange(10):
         m0 = np.random.uniform(-1,3, 2)
-        cm, status = fmin_cma(rosenbrock, m0, 1.0, npop=50, max_iter=1000)
+        cm, status = fmin_cma(rosenbrock, m0, 1.0, npop=50, max_iter=1000, verbose=True)
         assert status == 'CONVERGED_WIDTH'
         assert abs(cm.m - 1).max() < 1e-5
         assert rosenbrock(cm.m) < 1e-9
 
 
-def test_rosenbrock2():
+def test_rosenbrock_rtol():
     for i in xrange(10):
         m0 = np.random.uniform(-1,3, 2)
         cm, status = fmin_cma(rosenbrock, m0, 1.0, npop=50, max_iter=1000, rtol=1e-10, verbose=True)
         assert status == 'CONVERGED_RANGE'
+        assert rosenbrock(cm.m) < 0.3
+
+
+def test_rosenbrock_hof():
+    for i in xrange(10):
+        m0 = np.random.uniform(-1,3, 2)
+        cm, status = fmin_cma(rosenbrock, m0, 1.0, npop=50, max_iter=1000, verbose=True, hof_rate=0.0)
+        assert status == 'CONVERGED_WIDTH'
         assert rosenbrock(cm.m) < 0.3
 
 
