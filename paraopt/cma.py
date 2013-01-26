@@ -273,6 +273,7 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, wtol=1e-6, rtol=None,
             print '  Range threshold:       %10.3e' % rtol
         print '  Do rank-1 update:      %10s' % do_rank1
         print '  Do step size update:   %10s' % do_stepscale
+        print '  Hall-of-fame rate:     %10.5f' % hof_rate
 
     # B) The main loop
     if verbose:
@@ -441,6 +442,7 @@ def fmin_cma_async(fun, m0, sigma0, npop=None, nworker=None, max_iter=100,
         print '  Condition maximum:     %10.3e' % cnmax
         print '  Do rank-1 update:      %10s' % do_rank1
         print '  Do step size update:   %10s' % do_stepscale
+        print '  Hall-of-fame rate:     %10.5f' % hof_rate
 
     # B) The main loop
     if verbose:
