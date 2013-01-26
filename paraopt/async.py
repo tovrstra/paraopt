@@ -73,7 +73,7 @@ class Population(object):
 
     def sample(self):
         xs = np.random.normal(0, 1.0, self.ndof)
-        xs *= self.sigmas
+        xs *= self.widths
         xs = np.dot(self.evecs, xs)
         xs += self.m
         return xs
@@ -99,14 +99,14 @@ class Population(object):
             self.cov += self.mixing_cov*np.outer(x-m, x-m)
 
             self.analyze_cov()
-        return self.sigmas
+        return self.widths
 
     def analyze_cov(self):
         evals, self.evecs = np.linalg.eigh(self.cov)
-        self.sigmas = np.sqrt(abs(evals))
+        self.widths = np.sqrt(abs(evals))
 
 
-def fmin_async(fun, x0, sigma0, npop=None, nworker=None, max_iter=100, stol=1e-6, smax=1e6, cnmax=1e6, verbose=False, callback=None, reject_errors=False, loss_rate=0.0, mixing_cov=None):
+def fmin_async(fun, x0, sigma0, npop=None, nworker=None, max_iter=100, wtol=1e-6, cnmax=1e6, wmax=1e6, verbose=False, callback=None, reject_errors=False, loss_rate=0.0, mixing_cov=None):
     '''Minimize a function with an experimental asynchronous CMA variant
 
        **Arguments:**
@@ -128,22 +128,26 @@ def fmin_async(fun, x0, sigma0, npop=None, nworker=None, max_iter=100, stol=1e-6
             The size of the sample population. By default, this is
             8 + 2*ndof.
 
+       nworker
+            The number of worker processes that are evaluating the function. By
+            default this is equal to npop
+
        max_iter
             The maximum number of iterations
+
+       wtol
+            When the largest width, sqrt(covariance eigenvalue), drops below
+            this value, the solution is sufficiently close to the real optimum
+            and the optimization has converged.
 
        cnmax
             When the condition number of the covariance goes above this
             threshold, the minimum is considered degenerate and the optimizer
             stops.
 
-       stol
-            When the largest sqrt(covariance eigenvalue) drops below this value,
-            the solution is sufficiently close to the real optimum and the
-            optimization has converged.
-
-       smax
-            When the largest sqrt(covariance eigenvalue) exceeds this value,
-            the CMA algorithm is terminated due to divergence.
+       wmax
+            When the largest width, sqrt(covariance eigenvalue), exceeds this
+            value, the CMA algorithm is terminated due to divergence.
 
        verbose
             When set to True, some convergence info is printed on screen. When
@@ -180,13 +184,13 @@ def fmin_async(fun, x0, sigma0, npop=None, nworker=None, max_iter=100, stol=1e-6
         print 'Async CMA parameters'
         print '  Number of unknowns:    %10i' % p.ndof
         print '  Population size:       %10i' % p.npop
-        print '  Sigma tolerance:       %10.3e' % stol
-        print '  Sigma maximum:         %10.3e' % smax
+        print '  Width tolerance:       %10.3e' % wtol
+        print '  Width maximum:         %10.3e' % wmax
         print '  Condition maximum:     %10.3e' % cnmax
         print '  Loss rate:             %10.3f' % p.loss_rate
         print '  Covariance mixing:     %10.3e' % p.mixing_cov
 
-        print 'Iteration       Current          Best         Worst  Pop     max(sigmas)    cn(sigmas)        walltime[s]'
+        print 'Iteration       Current          Best         Worst  Pop     max(widths)    cn(widths)        walltime[s]'
         print '---------------------------------------------------------------------------------------------------------'
 
     while counter < max_iter:
@@ -210,23 +214,23 @@ def fmin_async(fun, x0, sigma0, npop=None, nworker=None, max_iter=100, stol=1e-6
             if f == 'FAILED' and print_now:
                 print '%9i  FAILED' % counter
             else:
-                evals = p.add_new(f, x, m)
+                widths = p.add_new(f, x, m)
                 status = None
                 if p.complete:
-                    if evals[-1] > evals[0]*cnmax:
+                    if widths[-1] > widths[0]*cnmax:
                         return p, 'FAILED_DEGENERATE'
-                    elif evals[-1] > smax:
+                    elif widths[-1] > wmax:
                         return p, 'FAILED_DIVERGENCE'
-                    elif evals[-1] < stol:
+                    elif widths[-1] < wtol:
                         return p, 'CONVERGED_SIGMA'
                 if print_now:
-                    if evals[0] == 0.0:
+                    if widths[0] == 0.0:
                         cn = 0.0
                     else:
-                        cn = evals[-1]/evals[0]
+                        cn = widths[-1]/widths[0]
                     print '%9i  %12.5e  %12.5e  %12.5e  %3i    %12.5e  %12.5e   %16.3f' % (
                         counter, f, p.members[0][0], p.members[-1][0], len(p.members),
-                        evals[-1], cn, time.time()-time0
+                        widths[-1], cn, time.time()-time0
                     )
             if callback is not None:
                 callback(p)

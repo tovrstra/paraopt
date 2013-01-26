@@ -150,7 +150,7 @@ class CovarianceModel(object):
 
 
 
-def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cnmax=1e6, wtol=1e-12, rtol=None, wmax=1e12, verbose=False, do_rank1=True, do_stepscale=True, callback=None, reject_errors=False):
+def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, wtol=1e-6, rtol=None, cnmax=1e6, wmax=1e6, verbose=False, do_rank1=True, do_stepscale=True, callback=None, reject_errors=False):
     '''Minimize a function with a basic CMA algorithm
 
        **Arguments:**
@@ -177,23 +177,23 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cnmax=1e6, wtol=1e-12, rt
        max_iter
             The maximum number of iterations
 
-       cnmax
-            When the condition number of the covariance goes above this
-            threshold, the minimum is considered degenerate and the optimizer
-            stops.
-
        wtol
             When the largest width, sqrt(covariance eigenvalue), drops below
             this value, the solution is sufficiently close to the real optimum
             and the optimization has converged.
 
-       wmax
-            When the largest width, sqrt(covariance eigenvalue), exceeds this
-            value, the CMA algorithm is terminated due to divergence.
-
        rtol
             When the range of the selected results drops below this threshold,
             the optimization has converged.
+
+       cnmax
+            When the condition number of the covariance goes above this
+            threshold, the minimum is considered degenerate and the optimizer
+            stops.
+
+       wmax
+            When the largest width, sqrt(covariance eigenvalue), exceeds this
+            value, the CMA algorithm is terminated due to divergence.
 
        verbose
             When set to True, some convergence info is printed on screen
@@ -245,27 +245,11 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cnmax=1e6, wtol=1e-12, rt
 
     # B) The main loop
     if verbose:
-        print 'Iteration   max(widths)  cond(widths)       min(fs)     range(fs) linear  path-sigma-ratio  walltime[s]'
+        print '-------------------------------------+-------------------------------------------------------'
+        print 'Iteration       min(fs)    range(fs) |  max(sigmas)   cn(signas) lin   p-s-ratio  walltime[s]'
+        print '-------------------------------------+-------------------------------------------------------'
     time0 = time.time()
-    for i in xrange(max_iter):
-        # screen info
-        if verbose:
-            if cm.min_width > 0:
-                cond = cm.max_width/cm.min_width
-            else:
-                cond = 0.0
-            print '%9i  % 12.5e  % 12.5e' % (i, cm.max_width, cond),
-        if cm.max_width < wtol:
-            if verbose: print
-            return cm, 'CONVERGED_WIDTH'
-        elif cm.max_width > cm.min_width*cnmax:
-            if verbose: print
-            return cm, 'FAILED_DEGENERATE'
-        elif cm.max_width > wmax:
-            # This typically happens when the initial step size is too small
-            if verbose: print
-            return cm, 'FAILED_DIVERGENCE'
-
+    for counter in xrange(max_iter):
         # generate input samples
         xs = cm.generate()
 
@@ -287,35 +271,112 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, cnmax=1e6, wtol=1e-12, rt
         # compute rescaled displacemets
         ys = (xs - cm.m)/cm.sigma
 
-        # screen info
-        if verbose:
-            print ' % 12.5e  % 12.5e' % (fs[0], frange),
-
-        # check for range convergence
-        if rtol is not None and frange < rtol:
-            if verbose: print
-            return cm, 'CONVERGED_RANGE'
-
         # determine the new mean and covariance
         cm.update_covar(xs, ys)
+
+        # Print screen output
         if verbose:
             if cm.linear_slope:
-                print 'L',
+                linear_str = 'L'
             else:
-                print ' ',
+                linear_str = ' '
             if cm.do_rank1 or cm.do_stepscale:
-                print '      % 12.5e' % cm.path_sigma_ratio,
+                ratio_str = '% 12.5e' % cm.path_sigma_ratio
             else:
-                print '                  ',
-            print '%16.3f' % (time.time()-time0)
+                ratio_str = '            '
+            print '%9i  %12.5e %12.5e | %12.5e %12.5e  %s %s %12.3f' % (
+                counter, fs[0], fs[-1]-fs[0],
+                cm.max_width, cm.cond, linear_str,
+                ratio_str, time.time()-time0
+            )
 
+        # If provided, call the callback function.
         if callback is not None:
             callback(cm)
+
+        if cm.max_width < wtol:
+            return cm, 'CONVERGED_WIDTH'
+        elif cm.max_width > cm.min_width*cnmax:
+            return cm, 'FAILED_DEGENERATE'
+        elif cm.max_width > wmax:
+            return cm, 'FAILED_DIVERGENCE'
+        elif rtol is not None and frange < rtol:
+            return cm, 'CONVERGED_RANGE'
 
     return cm, 'FAILED_MAX_ITER'
 
 
-def fmin_cma_async(fun, m0, sigma0, npop=None, nworker=None, max_iter=100, cnmax=1e6, wtol=1e-12, wmax=1e12, verbose=False, do_rank1=True, do_stepscale=True, callback=None, reject_errors=False):
+def fmin_cma_async(fun, m0, sigma0, npop=None, nworker=None, max_iter=100, wtol=1e-12, cnmax=1e6, wmax=1e6, verbose=False, do_rank1=True, do_stepscale=True, callback=None, reject_errors=False):
+    '''Minimize a function with a basic CMA algorithm
+
+       **Arguments:**
+
+       fun
+           The function to be minimized. It is recommended to use scoop for
+           internal parallelization.
+
+       m0
+            The initial guess. (numpy vector, shape=n)
+
+       sigma0
+            The initial value of the step size
+
+
+       **Optional arguments:**
+
+       npop
+            The size of the sample population. By default, this is
+            4 + floor(3*ln(ndof)). This is a minimal choice. In case of
+            convergence issues, it is recommended to increase npop to something
+            proportional to ndof
+
+       nworker
+            The number of worker processes that are evaluating the function. By
+            default this is equal to npop
+
+       max_iter
+            The maximum number of iterations
+
+       wtol
+            When the largest width, sqrt(covariance eigenvalue), drops below
+            this value, the solution is sufficiently close to the real optimum
+            and the optimization has converged.
+
+       rtol
+            When the range of the selected results drops below this threshold,
+            the optimization has converged.
+
+       cnmax
+            When the condition number of the covariance goes above this
+            threshold, the minimum is considered degenerate and the optimizer
+            stops.
+
+       wmax
+            When the largest width, sqrt(covariance eigenvalue), exceeds this
+            value, the CMA algorithm is terminated due to divergence.
+
+       verbose
+            When set to True, some convergence info is printed on screen
+
+       do_rank1
+            If True, rank-1 updates are used in the CMA algorith. This increases
+            efficiency on well-behaved functions but decreases robustness.
+
+       do_stepscale
+            If True, step-size updates are used in the CMA algorith. This
+            increases efficiency on well-behaved functions but decreases
+            robustness.
+
+       callback
+            If given, this routine is called after each update of the covariance
+            model. One argument is given, i.e. the covariance model.
+
+       reject_errors
+            When set to True, exceptions in fun will be caught and the
+            corresponding trials will be rejected. If there are too many
+            rejected attempts in one iteration, such that the number of
+            successful ones is below cm.nselect, the algorithm will still fail.
+    '''
     # A) Parse the arguments:
     cm = CovarianceModel(m0, sigma0, npop, do_rank1, do_stepscale)
     if not isinstance(cm.npop, int) or cm.npop < 1:
