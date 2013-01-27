@@ -24,3 +24,4 @@ from paraopt.common import *
 
 from paraopt.async import *
 from paraopt.cma import *
+from paraopt.kriging import *

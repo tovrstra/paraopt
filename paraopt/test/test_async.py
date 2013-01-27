@@ -25,8 +25,6 @@ from paraopt import *
 from common import *
 
 
-
-
 def test_harmonic1():
     for i in xrange(10):
         x0 = np.random.uniform(-1,3, 1)

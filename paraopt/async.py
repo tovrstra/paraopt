@@ -23,7 +23,7 @@
 import numpy as np
 import time, bisect
 
-from paraopt.context import context
+from paraopt.context import context as global_context
 from paraopt.common import WorkerWrapper
 
 
@@ -106,7 +106,7 @@ class Population(object):
         self.widths = np.sqrt(abs(evals))
 
 
-def fmin_async(fun, x0, sigma0, npop=None, nworker=None, max_iter=100, wtol=1e-6, cnmax=1e6, wmax=1e6, verbose=False, callback=None, reject_errors=False, loss_rate=0.0, mixing_cov=None):
+def fmin_async(fun, x0, sigma0, npop=None, nworker=None, max_iter=100, wtol=1e-6, cnmax=1e6, wmax=1e6, verbose=False, callback=None, reject_errors=False, loss_rate=0.0, mixing_cov=None, context=None):
     '''Minimize a function with an experimental asynchronous CMA variant
 
        **Arguments:**
@@ -171,12 +171,17 @@ def fmin_async(fun, x0, sigma0, npop=None, nworker=None, max_iter=100, wtol=1e-6
        mixing_cov
             The mixing coefficient for the covariance matrix. This defaults
             to 1/(4+ndof).
+
+       context
+            A custom context. If not given, the global context will be used.
     '''
     workers = []
     p = Population(x0, sigma0, npop, loss_rate, mixing_cov)
 
     if nworker is None:
         nworker = p.npop
+    if context is None:
+        context = global_context
 
     counter = 0
     time0 = time.time()
