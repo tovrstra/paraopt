@@ -22,7 +22,7 @@
 
 import numpy as np
 from paraopt import *
-from common import *
+from paraopt.test.common import *
 
 
 def test_harmonic1():
@@ -71,3 +71,8 @@ def test_callback():
 def test_reject_errors():
     m0 = np.random.uniform(2, 3, 2)
     cm, status = fmin_cma(failing, m0, 1.0, npop=50, max_iter=10, rtol=1e-10, reject_errors=True)
+
+
+def test_timout():
+    m0 = np.random.uniform(2, 3, 2)
+    cm, status = fmin_cma(someslow, m0, 1.0, npop=50, max_iter=10, rtol=1e-10, timeout=0.1)

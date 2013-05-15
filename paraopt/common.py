@@ -20,11 +20,11 @@
 #--
 
 
-import sys, traceback
+import sys, traceback, signal
 
 
 __all__ = [
-    'WorkerWrapper',
+    'WorkerWrapper', 'TimeoutWrapper'
 ]
 
 
@@ -46,3 +46,28 @@ class WorkerWrapper(object):
                 raise
             else:
                 return 'FAILED'
+
+
+class TimeoutError(Exception):
+    pass
+
+
+class TimeoutWrapper(object):
+    def __init__(self, myfn, timeout):
+        self.myfn = myfn
+        self.timeout = timeout
+
+    def __call__(self, *args, **kwargs):
+        def _handle_timeout(signum, frame):
+            raise TimeoutError()
+
+        signal.signal(signal.SIGALRM, _handle_timeout)
+        signal.setitimer(signal.ITIMER_REAL, self.timeout)
+
+        try:
+            result = self.myfn(*args, **kwargs)
+        except TimeoutError:
+            result = 'FAILED'
+        finally:
+            signal.alarm(0)
+        return result

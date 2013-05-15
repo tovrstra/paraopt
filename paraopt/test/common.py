@@ -20,10 +20,13 @@
 #--
 
 
-import numpy as np
+import numpy as np, time
 
 
-__all__ = ['LogCallback', 'harmonic', 'harmonic_noise', 'rosenbrock', 'failing']
+__all__ = [
+    'LogCallback', 'harmonic', 'harmonic_noise', 'rosenbrock', 'failing',
+    'someslow'
+]
 
 
 np.seterr(all='raise')
@@ -57,3 +60,9 @@ def failing(x):
         raise ValueError
     else:
         return rosenbrock(x)
+
+
+def someslow(x):
+    if np.random.uniform(0, 1) < 0.05:
+        time.sleep(0.15)
+    return rosenbrock(x)

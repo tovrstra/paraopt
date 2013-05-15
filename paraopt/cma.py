@@ -25,7 +25,7 @@ from scipy.special import gamma
 import time
 
 from paraopt.context import context as global_context
-from paraopt.common import WorkerWrapper
+from paraopt.common import WorkerWrapper, TimeoutWrapper
 
 
 __all__ = [
@@ -175,7 +175,7 @@ class CovarianceModel(object):
 
 def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, wtol=1e-6, rtol=None,
              cnmax=1e6, wmax=1e6, verbose=False, do_rank1=True,
-             do_stepscale=True, callback=None, reject_errors=False,
+             do_stepscale=True, callback=None, reject_errors=False, timeout=None,
              hof_rate=1.0, context=None):
     '''Minimize a function with a basic CMA algorithm
 
@@ -243,6 +243,11 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, wtol=1e-6, rtol=None,
             rejected attempts in one iteration, such that the number of
             successful ones is below cm.nselect, the algorithm will still fail.
 
+       timeout
+            Maximum time that a function is allowed to take. If it runs longer,
+            the corresponding parameters are considered to fail and are
+            rejected.
+
        hof_rate
             The rate with which the hall of fame must be purged. The default
             is 1.0, which corresponds to cleaning the hall of fame on every
@@ -279,6 +284,13 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, wtol=1e-6, rtol=None,
         print '  Do rank-1 update:      %10s' % do_rank1
         print '  Do step size update:   %10s' % do_stepscale
         print '  Hall-of-fame rate:     %10.5f' % hof_rate
+        if timeout is not None:
+            print '  Timeout [s]:            %10.3f' % timeout
+
+    if reject_errors:
+        fun = WorkerWrapper(fun)
+    if timeout is not None:
+        fun = TimeoutWrapper(fun, timeout)
 
     # B) The main loop
     if verbose:
@@ -291,13 +303,10 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, wtol=1e-6, rtol=None,
         xs = cm.generate()
 
         # compute the function values
-        if reject_errors:
-            fs = context.map(WorkerWrapper(fun), xs)
-            fs = np.array([value for value in fs if value != 'FAILED'])
-            if len(fs) < cm.nselect:
-                raise RuntimeError('Too many evaluations failed.')
-        else:
-            fs = np.array(context.map(fun, xs))
+        fs = context.map(fun, xs)
+        fs = np.array([value for value in fs if value != 'FAILED'])
+        if len(fs) < cm.nselect:
+            raise RuntimeError('Too many evaluations failed or timed out.')
 
         # sort by function value and select
         select = fs.argsort()[:cm.nselect]
