@@ -53,6 +53,8 @@ class TimeoutError(Exception):
 
 
 class TimeoutWrapper(object):
+    __name__ = 'TimeoutWrapper'
+
     def __init__(self, myfn, timeout):
         self.myfn = myfn
         self.timeout = timeout
