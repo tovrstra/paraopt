@@ -288,7 +288,7 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, wtol=1e-6, rtol=None,
             print '  Timeout [s]:            %10.3f' % timeout
 
     if reject_errors:
-        fun = WorkerWrapper(fun)
+        fun = WorkerWrapper(fun, verbose=verbose)
     if timeout is not None:
         fun = TimeoutWrapper(fun, timeout)
 

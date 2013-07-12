@@ -31,17 +31,19 @@ __all__ = [
 class WorkerWrapper(object):
     __name__ = 'WorkerWrapper'
 
-    def __init__(self, myfn, reraise=False):
+    def __init__(self, myfn, reraise=False, verbose=False):
         self.myfn = myfn
         self.reraise = reraise
+        self.verbose = verbose
 
     def __call__(self, *args, **kwargs):
         try:
             return self.myfn(*args, **kwargs)
-        except:
+        except Exception:
             type, value, tb = sys.exc_info()
             lines = traceback.format_exception(type, value, tb)
-            print >> sys.stderr, ''.join(lines)
+            if self.verbose:
+                print >> sys.stderr, ''.join(lines)
             if self.reraise:
                 raise
             else:
