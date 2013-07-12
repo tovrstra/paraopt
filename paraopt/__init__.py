@@ -19,9 +19,8 @@
 #
 #--
 
+__version__ = '0.1'
+
 from paraopt.context import *
 from paraopt.common import *
-
-from paraopt.async import *
 from paraopt.cma import *
-from paraopt.kriging import *

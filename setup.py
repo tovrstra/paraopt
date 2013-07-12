@@ -23,14 +23,14 @@
 
 from distutils.core import setup
 
-setup(name='Paraopt',
-    version='0.0',
+setup(name='paraopt',
+    version='0.1',
     description='Paraopt is a simple parallel optimization toolbox.',
     author='Toon Verstraelen',
     author_email='Toon.Verstraelen@UGent.be',
     url='http://molmod.ugent.be/software/',
     package_dir = {'paraopt': 'paraopt'},
-    packages = ['paraopt'],
+    packages = ['paraopt', 'paraopt.test'],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Environment :: Console',
