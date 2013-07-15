@@ -114,6 +114,8 @@ class CovarianceModel(object):
         else:
             number_to_clean = int(np.floor(self.hof_rate*self.nselect))
             for i in xrange(number_to_clean):
+                if len(self.hof) == 0:
+                    break
                 del self.hof[np.random.randint(len(self.hof))]
         #  B) add
         for i in xrange(self.nselect):
