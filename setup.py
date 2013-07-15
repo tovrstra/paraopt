@@ -24,7 +24,7 @@
 from distutils.core import setup
 
 setup(name='paraopt',
-    version='0.1',
+    version='0.2',
     description='Paraopt is a simple parallel optimization toolbox.',
     author='Toon Verstraelen',
     author_email='Toon.Verstraelen@UGent.be',
