@@ -34,7 +34,7 @@ __all__ = [
 
 
 class CovarianceModel(object):
-    def __init__(self, m0, sigma0, npop, do_rank1, do_stepscale, hof_rate=1.0):
+    def __init__(self, m0, sigma0, npop, do_rank1, do_stepscale, covar=None, hof_rate=1.0):
         # Features
         self.do_rank1 = do_rank1
         self.do_stepscale = do_stepscale
@@ -52,7 +52,10 @@ class CovarianceModel(object):
             self.npop = npop
         self.nselect = self.npop/2
         self.sigma = float(sigma0)
-        self.covar = np.identity(self.ndof, dtype=float)
+        if covar is None:
+            self.covar = np.identity(self.ndof, dtype=float)
+        else:
+            self.covar = covar
         self._update_derived()
         self.hof = []
 
@@ -178,7 +181,7 @@ class CovarianceModel(object):
 def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, wtol=1e-6, rtol=None,
              cnmax=1e6, wmax=1e6, verbose=False, do_rank1=True,
              do_stepscale=True, callback=None, reject_errors=False, timeout=None,
-             hof_rate=1.0, context=None):
+             covar=None, hof_rate=1.0, context=None):
     '''Minimize a function with a basic CMA algorithm
 
        **Arguments:**
@@ -250,6 +253,11 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, wtol=1e-6, rtol=None,
             the corresponding parameters are considered to fail and are
             rejected.
 
+       covar
+            The initial (unscaled) covariance matrix. When not given, the identy
+            matrix is used. This option may be used to facilitate the restart
+            of a CMA optimization.
+
        hof_rate
             The rate with which the hall of fame must be purged. The default
             is 1.0, which corresponds to cleaning the hall of fame on every
@@ -260,7 +268,7 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, wtol=1e-6, rtol=None,
     '''
 
     # A) Parse the arguments:
-    cm = CovarianceModel(m0, sigma0, npop, do_rank1, do_stepscale, hof_rate)
+    cm = CovarianceModel(m0, sigma0, npop, do_rank1, do_stepscale, covar, hof_rate)
     if not isinstance(cm.npop, int) or cm.npop < 1:
         raise ValueError('npop must be a strictly positive integer.')
     if context is None:
