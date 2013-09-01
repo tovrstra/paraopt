@@ -304,9 +304,9 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, wtol=1e-6, rtol=None,
 
     # B) The main loop
     if verbose:
-        print '-------------------------------------+-------------------------------------------------------'
-        print 'Iteration       min(fs)    range(fs) |  max(sigmas)   cn(signas) lin   p-s-ratio  walltime[s]'
-        print '-------------------------------------+-------------------------------------------------------'
+        print '-------------------------------------+--------------------------------------------------------------------'
+        print 'Iteration       min(fs)    range(fs) |  max(sigmas)   cn(sigmas) lin   p-s-ratio       sigma0  walltime[s]'
+        print '-------------------------------------+--------------------------------------------------------------------'
     time0 = time.time()
     for counter in xrange(max_iter):
         # generate input samples
@@ -340,10 +340,10 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, wtol=1e-6, rtol=None,
                 ratio_str = '% 12.5e' % cm.path_sigma_ratio
             else:
                 ratio_str = '            '
-            print '%9i  %12.5e %12.5e | %12.5e %12.5e  %s %s %12.3f' % (
+            print '%9i  %12.5e %12.5e | %12.5e %12.5e  %s %s %12.5e %12.3f' % (
                 counter, fs[0], fs[-1]-fs[0],
                 cm.max_width, cm.cond, linear_str,
-                ratio_str, time.time()-time0
+                ratio_str, cm.sigma, time.time()-time0
             )
 
         # If provided, call the callback function.
