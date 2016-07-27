@@ -265,6 +265,8 @@ def fmin_cma(fun, m0, sigma0, npop=None, max_iter=100, wtol=1e-6, rtol=None,
 
        context
             A custom context. If not given, the global context will be used.
+
+       **Returns:** cm, status
     '''
 
     # A) Parse the arguments:
