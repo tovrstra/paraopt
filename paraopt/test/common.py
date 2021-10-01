@@ -17,19 +17,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>
 #
-#--
+# --
 
 
 import numpy as np, time
 
 
 __all__ = [
-    'LogCallback', 'harmonic', 'harmonic_noise', 'rosenbrock', 'failing',
-    'someslow'
+    "LogCallback",
+    "harmonic",
+    "harmonic_noise",
+    "rosenbrock",
+    "failing",
+    "someslow",
 ]
 
 
-np.seterr(all='raise')
+np.seterr(all="raise")
 
 
 class LogCallback(object):
@@ -41,7 +45,7 @@ class LogCallback(object):
 
 
 def harmonic(x):
-    return 0.5*np.linalg.norm(x - np.ones(x.shape))**2
+    return 0.5 * np.linalg.norm(x - np.ones(x.shape)) ** 2
 
 
 def harmonic_noise(x):
@@ -50,8 +54,8 @@ def harmonic_noise(x):
 
 def rosenbrock(x):
     result = 0
-    for i in xrange(len(x)-1):
-        result += (1-x[i])**2 + 100*(x[i+1]-x[i]**2)**2
+    for i in xrange(len(x) - 1):
+        result += (1 - x[i]) ** 2 + 100 * (x[i + 1] - x[i] ** 2) ** 2
     return result
 
 

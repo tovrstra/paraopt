@@ -17,11 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>
 #
-#--
+# --
 
 
-__all__ = ['Context', 'context']
-
+__all__ = ["Context", "context"]
 
 
 class FakeFuture(object):
@@ -42,18 +41,23 @@ class Context(object):
     def use_stub(self):
         def my_map(fn, l, **kwargs):
             return [fn(i, **kwargs) for i in l]
+
         def my_wait_first(fs):
             return fs[:1], fs[1:]
+
         self.map = my_map
         self.wait_first = my_wait_first
         self.submit = FakeFuture
 
     def use_scoop(self):
         from scoop import futures
+
         def my_map(*args, **kwargs):
             return list(futures.map(*args, **kwargs))
+
         def my_wait_first(fs):
             return futures.wait(fs, return_when=futures.FIRST_COMPLETED)
+
         self.map = my_map
         self.wait_first = my_wait_first
         self.submit = futures.submit

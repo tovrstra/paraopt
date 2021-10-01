@@ -17,19 +17,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>
 #
-#--
+# --
 
 
 import sys, traceback, signal
 
 
-__all__ = [
-    'WorkerWrapper', 'TimeoutWrapper'
-]
+__all__ = ["WorkerWrapper", "TimeoutWrapper"]
 
 
 class WorkerWrapper(object):
-    __name__ = 'WorkerWrapper'
+    __name__ = "WorkerWrapper"
 
     def __init__(self, myfn, reraise=False, verbose=False):
         self.myfn = myfn
@@ -43,11 +41,11 @@ class WorkerWrapper(object):
             type, value, tb = sys.exc_info()
             lines = traceback.format_exception(type, value, tb)
             if self.verbose:
-                print >> sys.stderr, ''.join(lines)
+                print >>sys.stderr, "".join(lines)
             if self.reraise:
                 raise
             else:
-                return 'FAILED'
+                return "FAILED"
 
 
 class TimeoutError(Exception):
@@ -55,7 +53,7 @@ class TimeoutError(Exception):
 
 
 class TimeoutWrapper(object):
-    __name__ = 'TimeoutWrapper'
+    __name__ = "TimeoutWrapper"
 
     def __init__(self, myfn, timeout):
         self.myfn = myfn
@@ -71,7 +69,7 @@ class TimeoutWrapper(object):
         try:
             result = self.myfn(*args, **kwargs)
         except TimeoutError:
-            result = 'FAILED'
+            result = "FAILED"
         finally:
             signal.alarm(0)
         return result

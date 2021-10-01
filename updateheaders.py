@@ -18,11 +18,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>
 #
-#--
+# --
 
 
 from glob import glob
 import os
+
 
 def strip_header(lines, closing):
     # search for the header closing line, i.e. '#--\n'
@@ -42,67 +43,67 @@ def strip_header(lines, closing):
 
 def fix_python(lines, header_lines):
     # check if a shebang is present
-    do_shebang = lines[0].startswith('#!')
+    do_shebang = lines[0].startswith("#!")
     # remove the current header
-    strip_header(lines, '#--\n')
+    strip_header(lines, "#--\n")
     # add new header (insert must be in reverse order)
     for hline in header_lines[::-1]:
-        lines.insert(0, ('# '+hline).strip() + '\n')
+        lines.insert(0, ("# " + hline).strip() + "\n")
     # add a source code encoding line
-    lines.insert(0, '# -*- coding: utf-8 -*-\n')
+    lines.insert(0, "# -*- coding: utf-8 -*-\n")
     if do_shebang:
-        lines.insert(0, '#!/usr/bin/env python\n')
+        lines.insert(0, "#!/usr/bin/env python\n")
 
 
 def fix_c(lines, header_lines):
     # check for an exception line
     for line in lines:
-        if 'no_update_headers' in line:
+        if "no_update_headers" in line:
             return
     # remove the current header
-    strip_header(lines, '//--\n')
+    strip_header(lines, "//--\n")
     # add new header (insert must be in reverse order)
     for hline in header_lines[::-1]:
-        lines.insert(0, ('// '+hline).strip() + '\n')
+        lines.insert(0, ("// " + hline).strip() + "\n")
 
 
 def main():
     source_dirs = [
-        '.',
-        'paraopt',
-        'paraopt/test',
+        ".",
+        "paraopt",
+        "paraopt/test",
     ]
 
     fixers = [
-        ('.py', fix_python),
-        ('.pxd', fix_python),
-        ('.pyx', fix_python),
-        ('.c', fix_c),
-        ('.cpp', fix_c),
-        ('.h', fix_c),
+        (".py", fix_python),
+        (".pxd", fix_python),
+        (".pyx", fix_python),
+        (".c", fix_c),
+        (".cpp", fix_c),
+        (".h", fix_c),
     ]
 
-    f = open('HEADER')
+    f = open("HEADER")
     header_lines = f.readlines()
     f.close()
 
     for sdir in source_dirs:
-        print 'Scanning', sdir
-        for fn in glob(sdir + '/*.*'):
+        print "Scanning", sdir
+        for fn in glob(sdir + "/*.*"):
             if not os.path.isfile(fn):
                 continue
             for ext, fixer in fixers:
                 if fn.endswith(ext):
-                    print 'Fixing  ', fn
+                    print "Fixing  ", fn
                     f = file(fn)
                     lines = f.readlines()
                     f.close()
                     fixer(lines, header_lines)
-                    f = file(fn, 'w')
+                    f = file(fn, "w")
                     f.writelines(lines)
                     f.close()
                     break
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

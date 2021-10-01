@@ -18,25 +18,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>
 #
-#--
+# --
 #!/usr/bin/env python
 
 from distutils.core import setup
 
-setup(name='paraopt',
-    version='0.2',
-    description='Paraopt is a simple parallel optimization toolbox.',
-    author='Toon Verstraelen',
-    author_email='Toon.Verstraelen@UGent.be',
-    url='http://molmod.ugent.be/software/',
-    package_dir = {'paraopt': 'paraopt'},
-    packages = ['paraopt', 'paraopt.test'],
+setup(
+    name="paraopt",
+    version="0.2",
+    description="Paraopt is a simple parallel optimization toolbox.",
+    author="Toon Verstraelen",
+    author_email="Toon.Verstraelen@UGent.be",
+    url="http://molmod.ugent.be/software/",
+    package_dir={"paraopt": "paraopt"},
+    packages=["paraopt", "paraopt.test"],
     classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Environment :: Console',
-        'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: GNU General Public License (GPL)',
-        'Operating System :: POSIX :: Linux',
-        'Programming Language :: Python',
+        "Development Status :: 3 - Alpha",
+        "Environment :: Console",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: GNU General Public License (GPL)",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python",
     ],
 )
