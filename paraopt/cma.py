@@ -52,7 +52,7 @@ class CovarianceModel(object):
             self.npop = 4 + int(np.floor(3 * np.log(self.ndof)))
         else:
             self.npop = npop
-        self.nselect = self.npop / 2
+        self.nselect = self.npop // 2
         self.sigma = float(sigma0)
         if covar is None:
             self.covar = np.identity(self.ndof, dtype=float)
