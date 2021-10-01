@@ -135,12 +135,12 @@ class CovarianceModel(object):
             self.hof = []
         else:
             number_to_clean = int(np.floor(self.hof_rate * self.nselect))
-            for i in xrange(number_to_clean):
+            for i in range(number_to_clean):
                 if len(self.hof) == 0:
                     break
                 del self.hof[np.random.randint(len(self.hof))]
         #  B) add
-        for i in xrange(self.nselect):
+        for i in range(self.nselect):
             self.hof.append((xs[i], fs[i]))
         #  C) sort
         self.hof.sort(key=(lambda item: item[1]))
@@ -149,7 +149,7 @@ class CovarianceModel(object):
 
         # compute the new mean
         new_m = 0.0
-        for i in xrange(self.nselect):
+        for i in range(self.nselect):
             new_m += self.weights[i] * self.hof[i][0]
 
         if self.do_rank1 or self.do_stepscale:
@@ -321,27 +321,27 @@ def fmin_cma(
         context = global_context
 
     if verbose:
-        print "CMA parameters"
-        print "  Number of unknowns:    %10i" % cm.ndof
-        print "  Population size:       %10i" % cm.npop
-        print "  Selection size:        %10i" % cm.nselect
-        print "  Effective size:        %10.5f" % cm.mu_eff
-        print "  Rank-1 learning rate:  %10.5f" % cm.c_1
-        print "  Rank-mu learning rate: %10.5f" % cm.c_mu
-        print "  Cumul learning rate:   %10.5f" % cm.c_path_c
-        print "  Sigma learning rate:   %10.5f" % cm.c_path_sigma
-        print "  Sigma damping:         %10.5f" % cm.d_path_sigma
-        print "  Maximum iterations:    %10i" % max_iter
-        print "  Width tolerance:       %10.3e" % wtol
-        print "  Width maximum:         %10.3e" % wmax
-        print "  Condition maximum:     %10.3e" % cnmax
+        print("CMA parameters")
+        print("  Number of unknowns:    %10i" % cm.ndof)
+        print("  Population size:       %10i" % cm.npop)
+        print("  Selection size:        %10i" % cm.nselect)
+        print("  Effective size:        %10.5f" % cm.mu_eff)
+        print("  Rank-1 learning rate:  %10.5f" % cm.c_1)
+        print("  Rank-mu learning rate: %10.5f" % cm.c_mu)
+        print("  Cumul learning rate:   %10.5f" % cm.c_path_c)
+        print("  Sigma learning rate:   %10.5f" % cm.c_path_sigma)
+        print("  Sigma damping:         %10.5f" % cm.d_path_sigma)
+        print("  Maximum iterations:    %10i" % max_iter)
+        print("  Width tolerance:       %10.3e" % wtol)
+        print("  Width maximum:         %10.3e" % wmax)
+        print("  Condition maximum:     %10.3e" % cnmax)
         if rtol is not None:
-            print "  Range threshold:       %10.3e" % rtol
-        print "  Do rank-1 update:      %10s" % do_rank1
-        print "  Do step size update:   %10s" % do_stepscale
-        print "  Hall-of-fame rate:     %10.5f" % hof_rate
+            print("  Range threshold:       %10.3e" % rtol)
+        print("  Do rank-1 update:      %10s" % do_rank1)
+        print("  Do step size update:   %10s" % do_stepscale)
+        print("  Hall-of-fame rate:     %10.5f" % hof_rate)
         if timeout is not None:
-            print "  Timeout [s]:            %10.3f" % timeout
+            print("  Timeout [s]:            %10.3f" % timeout)
 
     if reject_errors:
         fun = WorkerWrapper(fun, verbose=verbose)
@@ -350,11 +350,17 @@ def fmin_cma(
 
     # B) The main loop
     if verbose:
-        print "-------------------------------------+--------------------------------------------------------------------"
-        print "Iteration       min(fs)    range(fs) |  max(sigmas)   cn(sigmas) lin   p-s-ratio       sigma0  walltime[s]"
-        print "-------------------------------------+--------------------------------------------------------------------"
+        print(
+            "-------------------------------------+--------------------------------------------------------------------"
+        )
+        print(
+            "Iteration       min(fs)    range(fs) |  max(sigmas)   cn(sigmas) lin   p-s-ratio       sigma0  walltime[s]"
+        )
+        print(
+            "-------------------------------------+--------------------------------------------------------------------"
+        )
     time0 = time.time()
-    for counter in xrange(max_iter):
+    for counter in range(max_iter):
         # generate input samples
         xs = cm.generate()
 
@@ -386,16 +392,19 @@ def fmin_cma(
                 ratio_str = "% 12.5e" % cm.path_sigma_ratio
             else:
                 ratio_str = "            "
-            print "%9i  %12.5e %12.5e | %12.5e %12.5e  %s %s %12.5e %12.3f" % (
-                counter,
-                fs[0],
-                fs[-1] - fs[0],
-                cm.max_width,
-                cm.cond,
-                linear_str,
-                ratio_str,
-                cm.sigma,
-                time.time() - time0,
+            print(
+                "%9i  %12.5e %12.5e | %12.5e %12.5e  %s %s %12.5e %12.3f"
+                % (
+                    counter,
+                    fs[0],
+                    fs[-1] - fs[0],
+                    cm.max_width,
+                    cm.cond,
+                    linear_str,
+                    ratio_str,
+                    cm.sigma,
+                    time.time() - time0,
+                )
             )
 
         # If provided, call the callback function.

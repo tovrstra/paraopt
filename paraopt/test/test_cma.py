@@ -26,7 +26,7 @@ from paraopt.test.common import *
 
 
 def test_harmonic1():
-    for i in xrange(10):
+    for i in range(10):
         m0 = np.random.uniform(-1, 3, 1)
         cm, status = fmin_cma(harmonic, m0, 1.0, npop=10, wtol=1e-4, verbose=True)
         assert status == "CONVERGED_WIDTH"
@@ -35,7 +35,7 @@ def test_harmonic1():
 
 
 def test_rosenbrock():
-    for i in xrange(10):
+    for i in range(10):
         m0 = np.random.uniform(-1, 3, 2)
         cm, status = fmin_cma(rosenbrock, m0, 1.0, npop=50, max_iter=1000, verbose=True)
         assert status == "CONVERGED_WIDTH"
@@ -44,7 +44,7 @@ def test_rosenbrock():
 
 
 def test_rosenbrock_rtol():
-    for i in xrange(10):
+    for i in range(10):
         m0 = np.random.uniform(-1, 3, 2)
         cm, status = fmin_cma(
             rosenbrock, m0, 1.0, npop=50, max_iter=1000, rtol=1e-10, verbose=True
@@ -54,7 +54,7 @@ def test_rosenbrock_rtol():
 
 
 def test_rosenbrock_hof():
-    for i in xrange(10):
+    for i in range(10):
         m0 = np.random.uniform(-1, 3, 2)
         cm, status = fmin_cma(
             rosenbrock, m0, 1.0, npop=50, max_iter=1000, verbose=True, hof_rate=0.0

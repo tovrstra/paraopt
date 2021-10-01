@@ -54,7 +54,7 @@ def harmonic_noise(x):
 
 def rosenbrock(x):
     result = 0
-    for i in xrange(len(x) - 1):
+    for i in range(len(x) - 1):
         result += (1 - x[i]) ** 2 + 100 * (x[i + 1] - x[i] ** 2) ** 2
     return result
 

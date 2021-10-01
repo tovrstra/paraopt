@@ -88,13 +88,13 @@ def main():
     f.close()
 
     for sdir in source_dirs:
-        print "Scanning", sdir
+        print("Scanning", sdir)
         for fn in glob(sdir + "/*.*"):
             if not os.path.isfile(fn):
                 continue
             for ext, fixer in fixers:
                 if fn.endswith(ext):
-                    print "Fixing  ", fn
+                    print("Fixing  ", fn)
                     f = file(fn)
                     lines = f.readlines()
                     f.close()

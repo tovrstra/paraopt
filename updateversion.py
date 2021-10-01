@@ -16,7 +16,7 @@ if __name__ == "__main__":
         r = re.compile(regex)
         with open(fn) as f:
             lines = f.readlines()
-        for i in xrange(len(lines)):
+        for i in range(len(lines)):
             line = lines[i]
             m = r.match(line)
             if m is not None:

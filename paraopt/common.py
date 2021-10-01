@@ -41,7 +41,7 @@ class WorkerWrapper(object):
             type, value, tb = sys.exc_info()
             lines = traceback.format_exception(type, value, tb)
             if self.verbose:
-                print >>sys.stderr, "".join(lines)
+                print("".join(lines), file=sys.stderr)
             if self.reraise:
                 raise
             else:
