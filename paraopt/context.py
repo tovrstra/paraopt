@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Paraopt is a simple parallel optimization toolbox.
 # Copyright (C) 2012-2013 Toon Verstraelen <Toon.Verstraelen@UGent.be>
 #

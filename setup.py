@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 # Paraopt is a simple parallel optimization toolbox.
 # Copyright (C) 2012-2013 Toon Verstraelen <Toon.Verstraelen@UGent.be>
 #
@@ -19,7 +18,6 @@
 # along with this program; if not, see <http://www.gnu.org/licenses/>
 #
 # --
-#!/usr/bin/env python
 
 from distutils.core import setup
 
