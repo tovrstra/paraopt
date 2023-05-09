@@ -66,7 +66,7 @@ class CovarianceModel(object):
         )
         assert (self.weights > 0).all()
         self.weights /= self.weights.sum()
-        self.mu_eff = 1 / (self.weights ** 2).sum()
+        self.mu_eff = 1 / (self.weights**2).sum()
 
         # Learning rates for the covariance matrix
         self.c_1 = 2.0 / ((self.ndof + 1.3) ** 2 + self.mu_eff)
